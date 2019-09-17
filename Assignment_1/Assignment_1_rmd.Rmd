@@ -1,0 +1,103 @@
+---
+title: "Assignment_1_rmd"
+author: "Emily"
+date: "September 17, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+```
+
+## Making Data Sets
+
+
+```{r explore}
+dat <- read_csv("Wrangler242-Fall2019.csv")
+head(dat)
+
+dat <- dat %>% 
+  mutate(monfac = as.factor(MonthFactor))
+
+training <- dat %>% 
+  filter(Year < 2016) 
+
+
+test <- dat %>% 
+  filter(Year > 2015) 
+```
+
+## Linear Modeling
+
+
+```{r linmod1}
+linmod1 <- lm(WranglerSales ~ WranglerQueries + Unemployment + CPI.All + CPI.Energy, data = training)
+
+summary(linmod1)
+```
+According to this model, the only coefficient which is significant is Wrangler queries.  This leads me to believe that there may be colinearity
+```{r linmod2}
+
+linmod2 <- lm(WranglerSales ~ WranglerQueries + Unemployment + CPI.All, data = training)
+
+summary(linmod2)
+
+```
+Still not good enough- going to get rid of CPI now
+
+```{r linmod3}
+linmod3 <- lm(WranglerSales ~ WranglerQueries + Unemployment, data = training)
+
+summary(linmod3)
+```
+Unemployment does not appear to e significant- checking other variables now
+```{r linmod4}
+linmod4 <- lm(WranglerSales ~ WranglerQueries + CPI.Energy, data = training)
+
+summary(linmod4)
+
+```
+It appears that out of these variables only Wrangler Queries is significant
+
+```{r linmod5}
+linmod5 <- lm(WranglerSales ~ WranglerQueries, data = training)
+
+summary(linmod5)
+
+```
+```{r factor}
+linmod6 <- lm(WranglerSales ~ WranglerQueries + monfac, data = training)
+
+summary(linmod6)
+
+```
+This has cause the R squared to increase- maybe better?
+
+```{r}
+# checking linmod 5 (no categorical variables) and lin mod 6(categorical month variables)
+test$P5 <- predict(linmod5, test)
+test_w_mean <- mean(test$WranglerSales)
+test <- test %>% 
+  mutate(e5 = abs(P5-WranglerSales)) %>% 
+  mutate(baselinee = abs(WranglerSales - test_w_mean))
+
+SSE5 <- sum(test$e5^2)
+SST <- sum((test$baselinee^2))
+OSR5 = 1-(SSE5/SST)
+
+test$P6 <- predict(linmod6, test)
+test <- test %>% 
+  mutate(e6 = abs(P6-WranglerSales))
+
+SSE6 <- sum(test$e6^2)
+OSR6 <- 1-(SSE6/SST)
+
+```
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
