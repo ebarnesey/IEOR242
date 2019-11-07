@@ -1,0 +1,405 @@
+---
+title: "Assignment_3_rmd"
+author: "Emily"
+date: "10/10/2019"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r libs, echo = FALSE}
+
+library(tidyverse)
+library(MASS)
+library(dplyr)
+library(ggplot2)
+library(caTools) # splits
+library(rpart) # CART
+library(rpart.plot) # CART plotting
+
+library(Rcpp)
+library(caret) # cross validation
+
+library(randomForest)
+library(gbm)
+
+
+library(nnet)
+library(ROCR)
+
+#install.packages("dplyr")
+
+
+```
+
+## Question 2 a
+
+
+```{r a}
+Letters <- read_csv("Letters.csv")
+Letters$isB = as.factor(Letters$letter == "B")
+
+train.ids = sample(nrow(Letters), .65*nrow(Letters))
+Letters.train = Letters[train.ids,]
+Letters.test = Letters[-train.ids,]
+
+```
+
+### Question 2 ai
+
+```{r ai}
+Letters.train.mod <- Letters.train %>% 
+  dplyr::select(-letter)
+
+Letters.test.mod <- Letters.test %>% 
+  dplyr::select(-letter)
+
+table(Letters.train.mod$isB)
+
+accuracy_isb_baseline = length(Letters.train.mod$isB[Letters.train.mod$isB== FALSE])/nrow(Letters.train.mod)
+accuracy_isb_baseline
+
+table(Letters.test.mod$isB)
+
+accuracy_isb_baseline_t = length(Letters.test.mod$isB[Letters.test.mod$isB== FALSE])/nrow(Letters.test.mod)
+accuracy_isb_baseline_t
+```
+The accuracy of the baseline model (a model assuming that none of the letters are B) is `r accuracy_isb_baseline` on the training set.
+
+The accuracy of the baseline model is `r accuracy_isb_baseline_t` on the test set.
+
+
+### Question 2 aii
+
+```{r 2aii}
+
+mod1 <- glm(isB ~., data=Letters.train.mod, family="binomial")
+summary(mod1)
+
+let.test_b = predict(mod1, newdata=Letters.test.mod, type="response")
+
+summary(let.test_b)
+
+t1 = table(Letters.test.mod$isB, let.test_b > 0.5)
+t1
+
+table(Letters.test.mod$isB)
+
+accuracy_isb = (t1[1,1]+t1[2,2])/nrow(Letters.test.mod)
+accuracy_isb
+
+
+
+```
+
+The accuracy of the logistic model for predicting B on the test set is `r accuracy_isb`.
+
+### Question 2 a iii
+AUC of logistic regression model
+
+```{r}
+rocr.log.pred <- prediction(let.test_b, Letters.test.mod$isB)
+logPerformance <- performance(rocr.log.pred, "tpr", "fpr")
+plot(logPerformance, colorize = TRUE)
+abline(0, 1)
+auc = as.numeric(performance(rocr.log.pred, "auc")@y.values)
+
+```
+The Auc is `r auc`. 
+
+### Question 2 a iv
+
+CART modeling B
+```{r}
+
+modCART <- rpart(isB ~.,
+            data = Letters.train.mod, method="class", 
+            minbucket=5, cp = 0.001)
+modCART
+prp(modCART) 
+
+cpVals = data.frame(cp = seq(0, .04, by=.001))
+
+set.seed(123)
+train.cart <- train(isB ~.,
+                    data = Letters.train.mod,
+                    method = "rpart",
+                    tuneGrid = cpVals,
+                    trControl = trainControl(method = "cv", number=5),
+                    metric = "Accuracy")
+
+# look at the cross validation results, stored as a data-frame
+# https://machinelearningmastery.com/machine-learning-evaluation-metrics-in-r/
+train.cart$results # please ignore kappa
+train.cart
+
+# plot the results
+ggplot(train.cart$results, aes(x=cp, y=Accuracy)) + geom_point()
+# We can increase the size of the points:
+ggplot(train.cart$results, aes(x=cp, y=Accuracy)) + geom_point(size=3)
+# We can change the default axis labels
+ggplot(train.cart$results, aes(x=cp, y=Accuracy)) + geom_point(size=3) +
+  xlab("Complexity Parameter (cp)") + geom_line()
+
+
+# Extract the best model and make predictions
+train.cart$bestTune
+mod123 = train.cart$finalModel
+prp(mod123, digits=3)
+
+Letters.test.mm = as.data.frame(model.matrix(isB~.+0, data=Letters.test.mod))
+pred_cart = predict(mod123, newdata=Letters.test.mm, type="class")
+tcart = table(Letters.test.mod$isB, pred_cart)
+
+accuracy_isb_cart = (tcart[1,1]+tcart[2,2])/nrow(Letters.test.mod)
+accuracy_isb_cart
+
+```
+The accuracy of the CART model is `r accuracy_isb_cart`. The cp value chosed to construct the CART model is `r train.cart$bestTune`.  This value is chosen by cross validation; the model is run repeatedly with a set seed and one trial for each cp value from 0 to .04 increaing by .001 intervals, and the cp value which produces the highest training set accuracy is selected.  
+
+### Question 2a v
+ Now construct a Random Forest model to predict whether or not the letter is a B. Just leave the Random Forest parameters at their default values (i.e., leave them out of the function call). What is the accuracy of this Random Forest model on the test set?
+
+```{r}
+set.seed(144)
+mod.let.rf <- randomForest(isB ~ ., data = Letters.train.mod, mtry = 5, nodesize = 5, ntree = 500)
+
+pred.let.rf <- predict(mod.let.rf, newdata = Letters.test.mod)
+
+t_rf = table(Letters.test.mod$isB, pred.let.rf)
+t_rf
+
+accuracy_isb_rf = (t_rf[1,1]+t_rf[2,2])/nrow(Letters.test.mod)
+accuracy_isb_rf
+```
+The accuracy of the random forest model is `r accuracy_isb_rf`
+
+### Question 2a vi
+```{r}
+accuracy_isb
+accuracy_isb_cart
+accuracy_isb_rf
+```
+
+The accuracy of the random forest model is highest, the accuracy of the CART model is lowest, and the accuracy of the logistic model is in the middle.  In this case, accuracy is more important than interpretability.  Identifying letters based on text characteristics has limited moral implications and is not susceptible to biases in the input data, meaning that interpretability of the factors and decisions which cause one letter to be identified and not another is not critical.  It is extremely important that models such as those which guide decisions on parole are interpretable, as these have significant implications for people's lives and it is important that all stakeholders be able to identify why a decision is made.  In the case of letter idenfitication, accuracy is more important than interpretability.
+
+## Question 2b
+
+### Question 2b i
+
+```{r}
+baseline_a = table(Letters.train$letter)
+baseline_a["P"]
+
+accuracy_alla = baseline_a["P"]/nrow(Letters.train)
+
+#based on this table the most common letter is P
+Letters.train.mod2 <- Letters.train %>% 
+  mutate(letter.f = as.factor(letter)) %>% 
+  dplyr::select(-letter) %>% 
+  dplyr::select(-isB)
+
+Letters.test.mod2 <- Letters.test %>% 
+  mutate(letter.f = as.factor(letter)) %>% 
+  dplyr::select(-letter) %>% 
+  dplyr::select(-isB)
+
+```
+
+The most common letter in the training set is P.
+The accuracy of the baseline set is `r accuracy_alla`.  The baseline model predicts that all letters are P, therefore is correct for all P and incorrect for all other letters.
+### Question 2b ii
+LDA modeling
+
+```{r}
+LDA_let <- lda(letter.f ~ ., Letters.train.mod2)
+LDA_test_let <- predict(LDA_let, Letters.test.mod2)
+
+LDA_t <- table(Letters.test.mod2$letter.f, LDA_test_let$class)
+LDA_t
+
+accuracy_LDA = (LDA_t[1,1]+LDA_t[2,2]+LDA_t[3,3]+LDA_t[4,4])/nrow(Letters.test.mod2)
+accuracy_LDA
+
+```
+The accuracy of the LDA model on the test set is `r accuracy_LDA`.
+
+### Question 2b iii
+CART modeling
+
+```{r}
+modCART_let <- rpart(letter.f ~.,
+            data = Letters.train.mod2, method="class", 
+            minbucket=5, cp = 0.001)
+modCART_let
+prp(modCART_let) 
+
+cpVals = data.frame(cp = seq(0, .04, by=.0005))
+
+set.seed(123)
+train.cart2 <- train(letter.f ~.,
+                    data = Letters.train.mod2,
+                    method = "rpart",
+                    tuneGrid = cpVals,
+                    trControl = trainControl(method = "cv", number=5),
+                    metric = "Accuracy")
+
+# look at the cross validation results, stored as a data-frame
+# https://machinelearningmastery.com/machine-learning-evaluation-metrics-in-r/
+train.cart2$results # please ignore kappa
+train.cart2
+
+# plot the results
+ggplot(train.cart2$results, aes(x=cp, y=Accuracy)) + geom_point(size=3) +
+  xlab("Complexity Parameter (cp)") + geom_line()
+
+# Extract the best model and make predictions
+train.cart2$bestTune
+mod123 = train.cart2$finalModel
+prp(mod123, digits=3)
+train.cart2
+
+# extract the "model matrix" for letter csv before we can make predictions
+# This is because caret does not work with factors, instead it creates dummy variables 
+Letters.test.all.mm = as.data.frame(model.matrix(letter.f~.+0, data=Letters.test.mod2))
+pred_cartisb = predict(mod123, newdata=Letters.test.all.mm, type="class")
+
+
+tcart_all = table(Letters.test.mod2$letter.f, pred_cartisb)
+tcart_all
+
+accuracy_cart_all = (tcart_all[1,1]+tcart_all[2,2]+tcart_all[3,3]+tcart_all[4,4])/nrow(Letters.test.mod2)
+accuracy_cart_all
+
+
+
+
+```
+The cross validation technique utilized in this model sets a seed and then runs the CART model with every possible cp value between 0 and .04 increasing by an increment of .0005. The cp value that produces the highest acuracy is selected as the cp value that will be used in the final CART model. The optimal cp value determined by cross validation for this model is `r train.cart2$bestTune `. 
+
+The accuracy of the resulting CART model on the test data is `r accuracy_cart_all`. 
+### Question 2b iv
+Vanilla bagging of CART models- random forest using all features (16 features to guess the letter)
+
+```{r}
+set.seed(144)
+mod.let.rf.all <- randomForest(letter.f ~ ., data = Letters.train.mod2, mtry = 16, nodesize = 5, ntree = 500)
+
+pred.let.bag.all <- predict(mod.let.rf.all, newdata = Letters.test.mod2)
+
+t_bag_all = table(Letters.test.mod2$letter.f, pred.let.bag.all)
+t_bag_all
+
+accuracy_bagging = (t_bag_all[1,1]+t_bag_all[2,2]+t_bag_all[3,3]+t_bag_all[4,4])/nrow(Letters.test.mod2)
+accuracy_bagging
+```
+
+### Question 2b v
+
+```{r}
+mtryVals = data.frame(mtry = seq(1, 16, by=1), rf_accuracy = seq(1, 16, by = 1))
+
+#Cross validation looking at accuracy
+
+for(i in 1:16){
+  set.seed(144)
+  mod.let.rf.all <- randomForest(letter.f ~ ., data = Letters.train.mod2, mtry = i)
+
+  pred.let.rf.all <- predict(mod.let.rf.all, newdata = Letters.test.mod2)
+
+  t_rf_all = table(Letters.test.mod2$letter.f, pred.let.rf.all)
+  t_rf_all
+
+  accuracy_let_rf = (t_rf_all[1,1]+t_rf_all[2,2]+t_rf_all[3,3]+t_rf_all[4,4])/nrow(Letters.test.mod)
+  accuracy_let_rf
+  
+  mtryVals$rf_accuracy[i]= accuracy_let_rf
+
+}
+
+mtryVals %>% ggplot(aes(x = mtry, y = rf_accuracy))+
+  geom_point()
+
+ideal_mtry = mtryVals$mtry[which.is.max(mtryVals$rf_accuracy)]
+
+mod.let.rf.all.f <- randomForest(letter.f ~ ., data = Letters.train.mod2, mtry = ideal_mtry)
+
+pred.let.rf.all <- predict(mod.let.rf.all.f, newdata = Letters.test.mod2)
+
+t_rf_all = table(Letters.test.mod2$letter.f, pred.let.rf.all)
+t_rf_all
+
+accuracy_let_rf = (t_rf_all[1,1]+t_rf_all[2,2]+t_rf_all[3,3]+t_rf_all[4,4])/nrow(Letters.test.mod)
+accuracy_let_rf
+
+
+```
+```{r}
+set.seed(144)
+train.rf = train(letter.f~., data = Letters.train.mod2, method = "rf", tuneGrid = data.frame(mtry=seq(1, 16, 1)), trControl = trainControl(method = "cv", number = 5), metric = "Accuracy")
+
+best.rf = train.rf$finalModel
+best.rf
+
+rf.plot <- ggplot(train.rf$results, aes(x=mtry, y=Accuracy)) + geom_line(lwd=2) +
+  ylab("Accuracy of Predictions")
+rf.plot
+
+Letters.test.mm = as.data.frame(model.matrix(letter.f ~. +0, data = Letters.test.mod2))
+
+set.seed(144)
+pred.best.rf = predict(best.rf, newdata = Letters.test.mm, type = "class")
+
+t_rf_all = table(Letters.test.mod2$letter.f, pred.best.rf)
+t_rf_all
+
+accuracy.rf = (t_rf_all[1,1]+t_rf_all[2,2]+t_rf_all[3,3]+t_rf_all[4,4])/nrow(Letters.test.mod)
+accuracy.rf 
+
+```
+For this random forest model, cross validation is employed to determine the ideal mtry value to use.  This is achieved by setting a seed and repeatedly running the fandom forest model for every value of mtry from 1 to 16.  The mtry value which produces the greatest accuracy is 2.  The accuracy of the random forest model with mtry=2 applied to the test set is `r accuracy.rf`.
+
+### Queation 2b Vi
+Boosting
+```{r}
+set.seed(144)
+mod.boost <- gbm(letter.f ~ .,
+                 data = Letters.train.mod2,
+                 distribution = "multinomial",
+                 n.trees = 3300,
+                 interaction.depth = 10)
+
+set.seed(144)
+pred.boost <- predict(mod.boost, newdata = Letters.test.mod2, n.trees=3300, type = "response")
+
+pred_fixed = apply(pred.boost, 1, which.max) 
+pred = factor(pred_fixed, levels = c(1,2,3,4), labels = c("A", "B", "P", "R"))
+
+t_rf_all = table(Letters.test.mod2$letter.f, pred)
+
+accuracy.boost = (t_rf_all[1,1]+t_rf_all[2,2]+t_rf_all[3,3]+t_rf_all[4,4])/nrow(Letters.test.mod)
+accuracy.boost 
+
+```
+The accuracy of the boosted model is `r accuracy.boost`.  
+### Question 2b vii
+
+```{r}
+accuracy_LDA
+accuracy_cart_all
+accuracy_bagging
+accuracy.rf
+accuracy.boost
+```
+The accuracy order of the models are, from least to most accurate, Cart model, LDA model, vanilla-bagged model, random forest model/ boosting model tied.  I would select the random forest model for this problem (as in part A) because it is marginally more accurate and slightly more interpretable than the boosted.  As in the case of the isB modeling, accuracy is more important than interpretability. 
+
+
+
+
+

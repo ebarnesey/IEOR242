@@ -2,7 +2,9 @@
 title: "Assignment_1_rmd"
 author: "Emily"
 date: "September 17, 2019"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -10,17 +12,47 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
 library(tidyverse)
+#install.packages("GGally")
+library(GGally)
+#install.packages("car")
+library(car)
+
+#install.packages("PerformanceAnalytics")
+library(PerformanceAnalytics)
 ```
 
-## Making Data Sets
+## Question 3 a
 
-
+Importing data and exploring
 ```{r explore}
+fj <- read_csv("FJ_242.csv")
+vif
+
+
 dat <- read_csv("Wrangler242-Fall2019.csv")
 head(dat)
 
+ggscatmat(dat)
+
 dat <- dat %>% 
-  mutate(monfac = as.factor(MonthFactor))
+  mutate(monfac = as.factor(MonthFactor)) %>% 
+  mutate(logunem = log(Unemployment))
+
+s <- read_csv("seasons.csv")
+s <- s %>% 
+  mutate(monfac = as.factor(Month)) %>% 
+  mutate(Season.f = as.factor(Season))
+
+dat <- dat %>% 
+  left_join(s) %>% 
+  mutate(is_jan = (Month == "January")) %>% 
+  mutate(is_spring = (Season == "Spring"))
+
+dat <- dat %>% 
+  left_join(fj)
+
+dat1<- dat %>% 
+  select(-monfac, -MonthFactor)
 
 training <- dat %>% 
   filter(Year < 2016) 
@@ -28,6 +60,10 @@ training <- dat %>%
 
 test <- dat %>% 
   filter(Year > 2015) 
+
+#chart.Correlation(dat1, histogram = TRUE)
+
+
 ```
 
 ## Linear Modeling
@@ -37,25 +73,31 @@ test <- dat %>%
 linmod1 <- lm(WranglerSales ~ WranglerQueries + Unemployment + CPI.All + CPI.Energy, data = training)
 
 summary(linmod1)
+
+vif(linmod1)
 ```
 According to this model, the only coefficient which is significant is Wrangler queries.  This leads me to believe that there may be colinearity
 ```{r linmod2}
 
-linmod2 <- lm(WranglerSales ~ WranglerQueries + Unemployment + CPI.All, data = training)
+linmod2 <- lm(WranglerSales ~ WranglerQueries + CPI.All + CPI.Energy, data = training)
 
 summary(linmod2)
+
+vif(linmod2)
 
 ```
 Still not good enough- going to get rid of CPI now
 
 ```{r linmod3}
-linmod3 <- lm(WranglerSales ~ WranglerQueries + Unemployment, data = training)
+linmod3 <- lm(WranglerSales ~ WranglerQueries + CPI.Energy, data = training)
 
 summary(linmod3)
+
+vif(linmod3)
 ```
 Unemployment does not appear to e significant- checking other variables now
 ```{r linmod4}
-linmod4 <- lm(WranglerSales ~ WranglerQueries + CPI.Energy, data = training)
+linmod4 <- lm(WranglerSales ~ WranglerQueries + CPI.All, data = training)
 
 summary(linmod4)
 
@@ -68,6 +110,8 @@ linmod5 <- lm(WranglerSales ~ WranglerQueries, data = training)
 summary(linmod5)
 
 ```
+##Question 3 b and c
+Checking how incorporatingmonth as a factor changes things
 ```{r factor}
 linmod6 <- lm(WranglerSales ~ WranglerQueries + monfac, data = training)
 
@@ -87,6 +131,7 @@ test <- test %>%
 SSE5 <- sum(test$e5^2)
 SST <- sum((test$baselinee^2))
 OSR5 = 1-(SSE5/SST)
+OSR5
 
 test$P6 <- predict(linmod6, test)
 test <- test %>% 
@@ -94,9 +139,112 @@ test <- test %>%
 
 SSE6 <- sum(test$e6^2)
 OSR6 <- 1-(SSE6/SST)
+OSR6
 
 ```
+Both of these OSR's are terrible, but the OSR for including month is slightly less terrible
 
+```{r}
+##checking the math, manually doing
+training$P5 <- predict(linmod5, training)
+tr_w_mean <- mean(training$WranglerSales)
+training <- training %>% 
+  mutate(e5 = abs(P5-WranglerSales)) %>% 
+  mutate(baselinee = abs(WranglerSales - tr_w_mean))
+
+trSSE5 <- sum(training$e5^2)
+trSST <- sum((training$baselinee^2))
+trOSR5 = 1-(trSSE5/trSST)
+trOSR5
+```
+This is equal to the R squared so I am not too far off- just a terrible model
+
+```{r}
+linmod7 <- lm(WranglerSales ~ Unemployment, data = training)
+
+summary(linmod7)
+
+# checking the OSR
+test$P7 <- predict(linmod7, test)
+test <- test %>% 
+  mutate(e7 = abs(P7-WranglerSales))
+
+SSE7 <- sum(test$e7^2)
+OSR7 <- 1-(SSE7/SST)
+OSR7
+
+```
+Multiple r suared on this is not good and the OSR is worse than the model with month and wrangler enquiries, so I guess it is not helpful
+```{r}
+#adding seasons
+
+
+linmod8 <- lm(WranglerSales ~ WranglerQueries + Season.f, data = training)
+
+summary(linmod8)
+
+# checking the OSR
+test$P8 <- predict(linmod8, test)
+test <- test %>% 
+  mutate(e8 = abs(P8-WranglerSales))
+
+SSE8 <- sum(test$e8^2)
+OSR8 <- 1-(SSE8/SST) 
+OSR8
+```
+```{r}
+
+
+linmod9 <- lm(WranglerSales ~ WranglerQueries + is_jan + is_spring, data = training)
+
+summary(linmod9)
+
+# checking the OSR
+test$P9 <- predict(linmod9, test)
+test <- test %>% 
+  mutate(e9 = abs(P9-WranglerSales))
+
+SSE9 <- sum(test$e9^2)
+OSR9 <- 1-(SSE9/SST) 
+
+OSR9
+
+```
+```{r}
+#trying same thing but including year
+linmod10 <- lm(WranglerSales ~ WranglerQueries + is_spring, data = training)
+
+summary(linmod10)
+
+test$P10 <- predict(linmod10, test)
+test <- test %>% 
+  mutate(e10 = abs(P10-WranglerSales))
+
+SSE10 <- sum(test$e10^2)
+OSR10 <- 1-(SSE10/SST) 
+
+OSR10
+```
+## Question 3 part d
+```{r}
+#including FJ cruiser (competitor) data
+linmod11 <- lm(WranglerSales ~ WranglerQueries+ monfac + fj_Cruiser_USA, data = training)
+
+summary(linmod11)
+
+vif(linmod11)
+
+# checking the OSR
+test$P11 <- predict(linmod11, test)
+test <- test %>% 
+  mutate(e11 = abs(P11-WranglerSales))
+
+SSE11 <- sum(test$e11^2)
+OSR11 <- 1-(SSE11/SST) 
+
+OSR11
+
+```
 
 
 

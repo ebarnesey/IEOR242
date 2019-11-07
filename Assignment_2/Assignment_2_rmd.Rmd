@@ -1,0 +1,249 @@
+---
+title: "Assignment_2_rmd"
+author: "Emily"
+date: "September 23, 2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r start, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#install.packages('tidyverse')
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+#install.packages("GGally")
+library(GGally)
+#install.packages("car")
+library(car)
+
+#install.packages("PerformanceAnalytics")
+library(PerformanceAnalytics)
+
+#install.packages("caTools")
+#install.packages("ROCR")
+
+#install.packages(c("caTools", "ROCR"))
+
+library(caTools)
+library(ROCR)
+
+#library(caTools)
+#library(ROCR)
+```
+## Problem 1
+
+```{r}
+B0 = -6
+B1 = .05
+B2 = 1
+
+X1 = 68
+X2 = 3.5
+
+e = exp(1)
+
+logisticeqn = 1/(1+e^-(B0 + (B1*X1)+(B2*X2)))
+
+logisticeqn
+
+```
+## Problem 2
+```{r}
+pi1 = .8
+pi0 = .2
+pi=3.1415
+
+sig2 = 36
+
+u0 = 0
+u1 = 10
+
+x = 4
+
+f1 = (1/(sqrt(2*pi*sig2)))*exp(-(((x-u1)^2)/(2*sig2)))
+f1
+
+
+f0 = (1/(sqrt(2*pi*sig2)))*exp(-(((x-u0)^2)/(2*sig2)))
+f0
+
+P0 = (pi1*f1)/((pi1*f1)+(pi0*f0))
+P0
+
+x = seq(from= -5, to = 15, by = .1)
+
+f00 = (1/(sqrt(2*pi*sig2)))*exp(-(((x-u0)^2)/(2*sig2)))
+f11 = (1/(sqrt(2*pi*sig2)))*exp(-(((x-u1)^2)/(2*sig2)))
+
+xx <- data.frame(x, f00, f11)
+
+ggplot(data = xx, aes(x = x, y = f00*pi0))+
+  geom_point()+
+  geom_point(aes(x = x, y = f11), data = xx)
+
+xx <- xx %>% 
+  mutate(prob1 = (pi1*f11)/((pi1*f11)+(pi0*f00)))
+
+ggplot(data = xx, aes(x = x, y = f00*pi0))+
+  geom_point()+
+  geom_point(aes(x = x, y = f11), data = xx)+
+  geom_point(aes(x=x, y = prob1), data = xx)
+
+```
+
+
+
+## Problem 3
+
+
+```{r setup}
+dat <- read_csv("framingham.csv")
+
+set.seed(144)
+
+split = sample.split(dat$TenYearCHD, SplitRatio = 0.7)
+
+# what is a split?
+chd.train <- filter(dat, split == TRUE) # is split a variable in loans?
+chd.test <- filter(dat, split == FALSE)
+
+table(chd.train$TenYearCHD)
+table(chd.test$TenYearCHD)
+
+#ggscatmat(chd.train)
+
+```
+
+## Part 3 a i
+
+You can also embed plots, for example:
+
+```{r 3ai}
+mod1 <- glm(TenYearCHD~., data=chd.train, family="binomial")
+summary(mod1)
+
+```
+
+The formula for this logistic model is as follows:
+
+Chance 10 year CHD = 1/ (1+ e^-(-8.495 + B1(Whether or not you are male) + B2(Age) + B3(Do you have a high school education)+ B4(Do you have some college education)+ B5(do you have some high school education)+ B6(are you a smoker)+ B7(How many cigarettes per day do you smoke)+B8(are you on BP meds)+ B9(Previous stroke)+B10(currently hypertensive)+ B11(Currently has diabetes)+ B12(total cholesterol)+B13(systolic blood pressure)+ B14(Diastolic bp)+ B15(BMI)+ B16(heart rate)+ B17(glucose)))
+
+B1 = .43; B2=.065; B3=-.12; B4=-.077; B5=.064; B6=.103; B7=.0174; B8=-.107; B9=.937; B10=.244; B11=-.0059; B12=.00187; B13=.0168; B14=-.007463; B15=.0045; B16=-.00000084; B17=.0084
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+### Problem 3 part a ii
+
+  Based on p-values, the only factors which are significant are gender, age, cigarettes per day, systolic blood pressure, and blood glucose.  The coefficient of blood glucose is positive, meaning that higher blood glucose levels at time of evaluation are related to a greater risk of coronary heart disease within the next 10 years.Unlike in the case of linear regression, the change in probability of CHD and the change in blood glucose levels are not linearly related.
+  (maybe add more to this)
+### Problem 3 part a iii
+
+Setting the cost of medicating equal to not medicating:
+500,000p = (1-p/4)60,000+(p/4)560,000
+
+The break even point for p is .16
+
+### Problem 3 part a iv
+Confusion matrix using the threshold of .16
+
+```{r}
+chd.test_predTest = predict(mod1, newdata=chd.test, type="response")
+
+summary(chd.test_predTest)
+
+table(chd.test$TenYearCHD, chd.test_predTest > 0.16)
+
+table(chd.test$TenYearCHD)
+
+accuracy = (637+111)/(1097)
+TPR = 111/(56+111)
+FPR = 293/(293+637)
+
+
+```
+accuracy:
+```{r, echo = FALSE}
+accuracy
+```
+TPR:
+```{r, echo = FALSE}
+TPR
+```
+FPR:
+```{r, echo = FALSE}
+FPR
+```
+
+### Problem 3 part a v
+based on the decision matrix, cost of true negative is 0, cost of false negative is 500,000, cost of true positive is 560,000, and cost of false positive is 60,000. Applying this to the numbers from the confusion matrix yields the following:
+```{r}
+total_cost = 0*637+ 500000*56+60000*293+560000*111
+cost_per_person = total_cost/1097
+cost_per_person
+
+```
+Given that we are told in the setup of the problem that the chance of CHD if medicated is 1/4 the chance of CHD if unmedicated, the assumption that medication does not change outcomes and therefore should not be considered in costs is not a valid assumption.  Utilizing this knowledge, the costs of not medicating remain the same, while the costs of medicating shift, as only 1/4 of the true positives would be assumed to get sick if they were medicated.
+
+```{r}
+total_cost_med = (0*637)+(500000*56)+((111/4)*560000)+(((111*.75)+293)*60000)
+cost_per_person_med = total_cost_med/1097
+cost_per_person_med
+```
+### Problem 3 part a vi
+Simple baseline model predicting that noone should get medication:
+```{r}
+table(chd.test$TenYearCHD, chd.test_predTest > 1)
+
+accuracy_baseline = 930/1097
+accuracy_baseline
+
+cost_per_person_baseline = (167*500000)/1097
+cost_per_person_baseline
+
+```
+
+True positive rate is 0 because the baseline model predicts that noone will get CHD. False positive rate is also zero, because once again the baseline model predicts that noone will get CHD.  The accuracy of the baseline model is .85, which is higher than the accuracy of the applied model- however it is important to note that the cost of a false negative is far higher than the cost of a false positive, so decision making based on the model saves money (~$16,000 per person).  The cost per person is \$76,117
+
+Female, age 51, college education, currently a smoker with an average of 20 cigarettes per day. Not on blood pressure medication, has not had stroke, but has hypertension. Not diagnosed with diabetes; total Cholesterol at 220. Systolic/diastolic blood pressure at 140/100, BMI at 31, heart rate at 59, glucose level at 78. 
+
+### Problem B part a vii
+Predicting CHD rate for a new patient:
+Female, age 51, college education, currently a smoker with an average of 20 cigarettes per day. Not on blood pressure medication, has not had stroke, but has hypertension. Not diagnosed with diabetes; total Cholesterol at 220. Systolic/diastolic blood pressure at 140/100, BMI at 31, heart rate at 59, glucose level at 78. 
+
+
+```{r}
+new_patient <- data.frame(male=0, age = 51, education = "College", currentSmoker = 1, cigsPerDay = 20, BPMeds = 0, prevalentStroke = 0, prevalentHyp = 1, diabetes = 0, totChol = 220, sysBP = 140, diaBP = 100, BMI = 31, heartRate = 59, glucose = 78)
+
+predict(mod1, newdata=new_patient, type="response")
+```
+
+The model predicts that this patient has an unmedicated risk of .1567618, meaning she falls just short of the .16 threshold and should not be medicated.
+
+## Problem 3 part b
+
+ROC curve for the test set and auc calculations described below.  The AUC for this model on this test set is .7335716.  ROC curves can ve very helpful in determining either improvements in the modeling upon which decisions surrounding the adoption of a particular medication option or alternatives between different medications.  In all cases, a higher ROC indicates lower rates of false positives relative to true positives, meaning that the model is performing better.
+
+One interesting aspect of this ROC curve is a plateau near the middle- beginning at a false positive rate of around .39, there is lettle to no improvement in the true positive rate until the false positive rate reaches nearly .45.  
+```{r}
+rocr.log.pred <- prediction(chd.test_predTest, chd.test$TenYearCHD)
+logPerformance <- performance(rocr.log.pred, "tpr", "fpr")
+plot(logPerformance, colorize = TRUE)
+abline(0, 1)
+as.numeric(performance(rocr.log.pred, "auc")@y.values)
+```
+
+## Problem 3 part c
+Decision tree for customers reaches the following (assuming probability = p = .16 and copay = C)
+
+Decision to copay => get CHP ((C+300000)* p/4) or no CHP ((C)*(1-p/4))
+Decision to not copay => get CHP (300000* p) or no CHP (0 * (1-p))
+
+Set the decision to copay and decision not to copay equal, set probability to .16, solve for C:
+
+the copay would need to be $36,000 in order to incentivize customers to self select such that they will only choose to go on medication if they have a greater than 16% chance of getting CHD.
+
+## Problem 3 part d
+
+One of the major ethical issues thusfar unaddressed in this analysis is the fact that the only value placed on human life by the insurance company is the cost of healthcare for those who get sick.  One way of combatting this would be to add a cost factor, possibly by increasing the percieved 'cost' of people getting CHD beyond the costs payed by the healthcare system to account for the value of patient health and happiness. Another ethical issue in the analysis so far is that it ignores human psychology and loss aversion- Even though the rational patient decision tree dictates that it would be most logical for patients to elect to pay the high copay to receive treatment if they have a greater than .16 risk of CHD, in reality patients with much higher risks would likely forego treatment because the short term chosen cost of the high copay is much more concrete and easier to wrap ones head around than the long-term potential cost of getting the disease.  

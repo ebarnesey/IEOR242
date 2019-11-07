@@ -1,0 +1,409 @@
+---
+title: "Assignment_4"
+author: "Emily"
+date: "10/31/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r libs}
+library(rpart)
+#install.packages()
+library(rpart.plot)
+library(caret)
+library(randomForest)
+library(gbm)
+library(caTools)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+
+library(tm)
+
+library(ngram)
+#install.packages('ngram')
+#Sys.setenv(JAVA_HOME="C:/Program Files/Java/jdk1-11.0.4/bin")
+#install.packages("tm.plugin.webmining")
+#library(tm.plugin.webmining)
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure}
+Clean <- function(HTML){
+  return(gsub("<.*?>", "", HTML))
+}
+
+
+```
+
+```{r}
+questions <- read.csv(file = "ggplot2questions2016_17.csv", stringsAsFactors = FALSE)
+
+questions_html <- questions %>% 
+  mutate(Body2 = Clean(Body))
+
+questions_html$bodyword = unlist(lapply(questions_html$Body2, wordcount))
+questions_html$titleword = unlist(lapply(questions_html$Title, wordcount))
+
+questions_html= questions_html %>% 
+  mutate(Body2 = gsub('[[:digit:]]+', '', Body2)) %>% 
+  mutate(Body2 = gsub("*\\(", " ", Body2)) %>% 
+  mutate(Body2 = gsub("*\\)", "", Body2))  
+
+
+questions_html$goodq = as.factor(as.logical(questions_html$Score >= 1))
+
+table(questions_html$goodq)
+```
+Note that according to this table, the number of good questions and bad questions are approximately equal. 
+
+```{r}
+# parsing out the body
+corpus = Corpus(VectorSource(questions_html$Body2))
+
+corpus[[1]]
+strwrap(corpus[[1]])
+
+# Step 2: Change all the text to lower case.
+# tm_map applies an operation to every document in our corpus
+# Here, that operation is 'tolower', i.e., 'to lowercase'
+corpus = tm_map(corpus, tolower)
+
+# tolower is a function
+
+# Lets check:
+strwrap(corpus[[1]])
+
+
+# Step 3: Remove all punctuation
+corpus = tm_map(corpus, removePunctuation)
+# Take a look:
+strwrap(corpus[[1]])
+
+# Step 4: Remove stop words
+# First, take a look at tm's stopwords:
+stopwords("english")[1:10]
+length(stopwords("english"))
+# Just remove stopwords:
+# corpus = tm_map(corpus, removeWords, stopwords("english"))
+# Remove stopwords and "apple" - this is a word common to all of our tweets
+corpus = tm_map(corpus, removeWords, c("ggplot2", stopwords("english")))
+# Take a look:
+strwrap(corpus[[1]])
+
+# Step 5: Stem our document
+# Recall, this means chopping off the ends of words that aren't maybe
+# as necessary as the rest, like 'ing' and 'ed'
+corpus = tm_map(corpus, stemDocument)
+# Take a look:
+strwrap(corpus[[1]])
+
+# Seems we didn't catch all of the apples...
+ corpus = tm_map(corpus, removeWords, c("ggplot"))
+
+# Step 6: Create a word count matrix (rows are tweets, columns are words)
+# We've finished our basic cleaning, so now we want to calculate frequencies
+# of words across the tweets
+frequencies = DocumentTermMatrix(corpus)
+# We can get some summary information by looking at this structure
+frequencies
+
+
+# Step 7: Account for sparsity
+# We currently have way too many words, which will make it hard to train
+# our models and may even lead to overfitting.
+# Use findFreqTerms to get a feeling for which words appear the most
+
+# Words that appear at least 50 times:
+findFreqTerms(frequencies, lowfreq=1000)
+# Words that appear at least 20 times:
+findFreqTerms(frequencies, lowfreq=500)
+
+# Our solution to the possibility of overfitting is to only keep terms
+# that appear in x% or more of the tweets. For example:
+# 1% of the tweets or more (= 12 or more)
+sparse = removeSparseTerms(frequencies, 0.99)
+
+# 0.5% of the tweets or more (= 6 or more)
+sparse = removeSparseTerms(frequencies, 0.995)
+# How many did we keep?
+sparse
+
+# Let's keep it at the 1%
+sparse = removeSparseTerms(frequencies, 0.7)
+sparse
+
+# Step 8: Create data frame from the document-term matrix
+QsTM = as.data.frame(as.matrix(sparse))
+# We have some variable names that start with a number, 
+# which can cause R some problems. Let's fix this before going
+# any further
+colnames(QsTM) = make.names(colnames(QsTM))
+# This isn't our original dataframe, so we need to bring that column
+# with the dependent variable into this new one
+QsTM$goodq = questions_html$goodq
+
+
+
+QsTM$bodyword = questions_html$bodyword
+
+QsTM$titleword = questions_html$titleword
+
+
+
+# Bonus: make a cool word cloud!
+wordcloud(corpus, max.words = 200, random.order = FALSE, rot.per = .1, 
+          colors = brewer.pal(8, "Dark2"))
+```
+Parsing out the header
+```{r}
+corpus = Corpus(VectorSource(questions_html$Title))
+
+corpus[[1]]
+strwrap(corpus[[1]])
+
+# Step 2: Change all the text to lower case.
+# tm_map applies an operation to every document in our corpus
+# Here, that operation is 'tolower', i.e., 'to lowercase'
+corpus = tm_map(corpus, tolower)
+
+# tolower is a function
+
+# Lets check:
+strwrap(corpus[[1]])
+
+
+# Step 3: Remove all punctuation
+corpus = tm_map(corpus, removePunctuation)
+# Take a look:
+strwrap(corpus[[1]])
+
+# Step 4: Remove stop words
+# First, take a look at tm's stopwords:
+stopwords("english")[1:10]
+length(stopwords("english"))
+# Just remove stopwords:
+# corpus = tm_map(corpus, removeWords, stopwords("english"))
+# Remove stopwords and "apple" - this is a word common to all of our tweets
+corpus = tm_map(corpus, removeWords, c("ggplot2", stopwords("english")))
+# Take a look:
+strwrap(corpus[[1]])
+
+# Step 5: Stem our document
+# Recall, this means chopping off the ends of words that aren't maybe
+# as necessary as the rest, like 'ing' and 'ed'
+corpus = tm_map(corpus, stemDocument)
+# Take a look:
+strwrap(corpus[[1]])
+
+# Seems we didn't catch all of the apples...
+ corpus = tm_map(corpus, removeWords, c("ggplot"))
+ 
+ frequencies = DocumentTermMatrix(corpus)
+# We can get some summary information by looking at this structure
+frequencies
+
+
+# Step 7: Account for sparsity
+# We currently have way too many words, which will make it hard to train
+# our models and may even lead to overfitting.
+# Use findFreqTerms to get a feeling for which words appear the most
+
+# Words that appear at least 50 times:
+findFreqTerms(frequencies, lowfreq=1000)
+# Words that appear at least 20 times:
+findFreqTerms(frequencies, lowfreq=500)
+
+# Our solution to the possibility of overfitting is to only keep terms
+# that appear in x% or more of the tweets. For example:
+# 1% of the tweets or more (= 12 or more)
+sparse = removeSparseTerms(frequencies, 0.99)
+
+# 0.5% of the tweets or more (= 6 or more)
+sparse = removeSparseTerms(frequencies, 0.995)
+# How many did we keep?
+sparse
+
+# Let's keep it at the 1%
+sparse = removeSparseTerms(frequencies, 0.7)
+sparse
+
+# Step 8: Create data frame from the document-term matrix
+QsTM_t = as.data.frame(as.matrix(sparse))
+# We have some variable names that start with a number, 
+# which can cause R some problems. Let's fix this before going
+# any further
+colnames(QsTM_t) = make.names(colnames(QsTM_t))
+
+colnames(QsTM_t) <- paste("T", colnames(QsTM_t), sep = "_")
+
+id <- rownames(QsTM)
+QsTM <- cbind(id=id, QsTM)
+
+id <- rownames(QsTM_t)
+QsTM_t <- cbind(id=id, QsTM_t)
+
+QsTM <- QsTM %>% 
+  left_join(QsTM_t)
+
+
+```
+
+
+
+splitting
+```{r}
+split = sample.split(QsTM$goodq, SplitRatio = 0.7)
+
+# what is a split?
+q.train <- filter(QsTM, split == TRUE) # is split a variable in loans?
+q.test <- filter(QsTM, split == FALSE)
+```
+
+
+starting with baseline model
+```{r}
+table(q.train$goodq)
+
+accuracy_b = length(q.train$goodq[q.train$goodq == FALSE])/nrow(q.train)
+accuracy_b
+
+table(q.test$goodq)
+
+ac_bt = length(q.test$goodq[q.test$goodq == FALSE])/nrow(q.test)
+ac_bt
+```
+
+Based on the test set tale, slightly more than half of the questions are bad. Therefore, it follows that the baseline assumption is that every question is bad.
+
+
+Starting with logistic model
+```{r}
+
+mod1 <- glm(goodq ~., data=q.train, family="binomial")
+summary(mod1)
+
+q_log_b = predict(mod1, newdata=q.test, type="response")
+summary(q_log_b)
+
+t1 = table(q.test$goodq, q_log_b > 0.5)
+t1
+
+table(q.test$goodq)
+
+accuracy_isb = (t1[1,1]+t1[2,2])/nrow(q.test)
+accuracy_isb
+
+
+q.train_log <- q.train %>% 
+  dplyr::select("code", "get", "seem", "datafram", "fill", "label", "librari", "result", "variabl", "column", "creat", "exampl", "like", "name", "someth", "error", "appreci", "help", "time", "know", "question", "goodq")
+
+q.test_log <- q.test %>% 
+  dplyr::select("code", "get", "seem", "datafram", "fill", "label", "librari", "result", "variabl", "column", "creat", "exampl", "like", "name", "someth", "error", "appreci", "help", "time", "know", "question", "goodq")
+
+
+mod2 <- glm(goodq ~., data=q.train_log, family="binomial")
+summary(mod2)
+
+q_log_b = predict(mod2, newdata=q.test_log, type="response")
+summary(q_log_b)
+
+t1 = table(q.test$goodq, q_log_b > 0.5)
+t1
+
+table(q.test_log$goodq)
+
+accuracy_isb = (t1[1,1]+t1[2,2])/nrow(q.test)
+accuracy_isb
+
+
+
+
+```
+this is better but not a lot better. Remove some segments
+
+CART modeling
+```{r}
+modCART <- rpart(goodq ~.,
+            data = q.train, method="class", 
+            minbucket=5, cp = 0.001)
+modCART
+prp(modCART) 
+
+cpVals = data.frame(cp = seq(0, .04, by=.001))
+
+set.seed(123)
+train.cart <- train(goodq ~.,
+                    data = q.train,
+                    method = "rpart",
+                    tuneGrid = cpVals,
+                    trControl = trainControl(method = "cv", number=5),
+                    metric = "Accuracy")
+
+train.cart$bestTune
+mod123 = train.cart$finalModel
+prp(mod123, digits=3)
+
+
+q.test.mm = as.data.frame(model.matrix(goodq~.+0, data=q.test))
+pred_cart = predict(mod123, newdata=q.test.mm, type="class")
+tcart = table(q.test$goodq, pred_cart)
+
+accuracy_isb_cart = (tcart[1,1]+tcart[2,2])/nrow(q.test)
+accuracy_isb_cart
+
+
+
+```
+random forests
+```{r}
+
+set.seed(144)
+mod.q.rf <- randomForest(goodq ~ ., data = q.train, mtry = 12, nodesize = 5, ntree = 500)
+
+pred.q.rf <- predict(mod.q.rf, newdata = q.test)
+
+t_rf = table(q.test$goodq, pred.q.rf)
+t_rf
+
+accuracy_isb_rf = (t_rf[1,1]+t_rf[2,2])/nrow(q.test)
+accuracy_isb_rf
+
+```
+
+```{r}
+set.seed(144)
+train.rf = train(goodq~., data = q.train, method = "rf", tuneGrid = data.frame(mtry=seq(1, 91, 1)), trControl = trainControl(method = "cv", number = 5), metric = "Accuracy")
+
+best.rf = train.rf$finalModel
+best.rf
+
+rf.plot <- ggplot(train.rf$results, aes(x=mtry, y=Accuracy)) + geom_line(lwd=2) +
+  ylab("Accuracy of Predictions")
+rf.plot
+
+q.test.mm = as.data.frame(model.matrix(goodq ~. +0, data = q.test))
+
+set.seed(144)
+pred.best.rf = predict(best.rf, newdata = q.test.mm, type = "class")
+
+t_rf_all = table(q.test$goodq, pred.best.rf)
+t_rf_all
+
+accuracy.rf = (t_rf_all[1,1]+t_rf_all[2,2])/nrow(q.test)
+accuracy.rf 
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

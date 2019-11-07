@@ -1,0 +1,866 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={Assignment\_1\_rmd},
+            pdfauthor={Emily},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\newcommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{Assignment\_1\_rmd}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{Emily}
+    \preauthor{\centering\large\emph}
+  \postauthor{\par}
+      \predate{\centering\large\emph}
+  \postdate{\par}
+    \date{September 17, 2019}
+
+
+\begin{document}
+\maketitle
+
+\subsection{Question 3 a}\label{question-3-a}
+
+Importing data and exploring
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{fj <-}\StringTok{ }\KeywordTok{read_csv}\NormalTok{(}\StringTok{"FJ_242.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Parsed with column specification:
+## cols(
+##   Month_fj = col_character(),
+##   fj_Cruiser_USA = col_double(),
+##   MonthNumeric = col_double(),
+##   Year = col_double()
+## )
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{vif}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## function (mod, ...) 
+## {
+##     UseMethod("vif")
+## }
+## <bytecode: 0x00000000117abb30>
+## <environment: namespace:car>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dat <-}\StringTok{ }\KeywordTok{read_csv}\NormalTok{(}\StringTok{"Wrangler242-Fall2019.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Parsed with column specification:
+## cols(
+##   MonthNumeric = col_double(),
+##   MonthFactor = col_character(),
+##   Year = col_double(),
+##   WranglerSales = col_double(),
+##   Unemployment = col_double(),
+##   WranglerQueries = col_double(),
+##   CPI.All = col_double(),
+##   CPI.Energy = col_double()
+## )
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{head}\NormalTok{(dat)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 6 x 8
+##   MonthNumeric MonthFactor  Year WranglerSales Unemployment WranglerQueries
+##          <dbl> <chr>       <dbl>         <dbl>        <dbl>           <dbl>
+## 1            1 January      2010          4888          9.8              30
+## 2            2 February     2010          5967          9.8              33
+## 3            3 March        2010          8410          9.9              34
+## 4            4 April        2010          8327          9.9              35
+## 5            5 May          2010          9634          9.6              36
+## 6            6 June         2010          8923          9.4              38
+## # ... with 2 more variables: CPI.All <dbl>, CPI.Energy <dbl>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggscatmat}\NormalTok{(dat)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning in ggscatmat(dat): Factor variables are omitted in plot
+\end{verbatim}
+
+\includegraphics{Assignment_1_rmd_files/figure-latex/explore-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dat <-}\StringTok{ }\NormalTok{dat }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{monfac =} \KeywordTok{as.factor}\NormalTok{(MonthFactor)) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{logunem =} \KeywordTok{log}\NormalTok{(Unemployment))}
+
+\NormalTok{s <-}\StringTok{ }\KeywordTok{read_csv}\NormalTok{(}\StringTok{"seasons.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Parsed with column specification:
+## cols(
+##   Month = col_character(),
+##   Season = col_character()
+## )
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{s <-}\StringTok{ }\NormalTok{s }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{monfac =} \KeywordTok{as.factor}\NormalTok{(Month)) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{Season.f =} \KeywordTok{as.factor}\NormalTok{(Season))}
+
+\NormalTok{dat <-}\StringTok{ }\NormalTok{dat }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{left_join}\NormalTok{(s) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{is_jan =}\NormalTok{ (Month }\OperatorTok{==}\StringTok{ "January"}\NormalTok{)) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{is_spring =}\NormalTok{ (Season }\OperatorTok{==}\StringTok{ "Spring"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Joining, by = "monfac"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dat <-}\StringTok{ }\NormalTok{dat }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{left_join}\NormalTok{(fj)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Joining, by = c("MonthNumeric", "Year")
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dat1<-}\StringTok{ }\NormalTok{dat }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{select}\NormalTok{(}\OperatorTok{-}\NormalTok{monfac, }\OperatorTok{-}\NormalTok{MonthFactor)}
+
+\NormalTok{training <-}\StringTok{ }\NormalTok{dat }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{filter}\NormalTok{(Year }\OperatorTok{<}\StringTok{ }\DecValTok{2016}\NormalTok{) }
+
+
+\NormalTok{test <-}\StringTok{ }\NormalTok{dat }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{filter}\NormalTok{(Year }\OperatorTok{>}\StringTok{ }\DecValTok{2015}\NormalTok{) }
+
+\CommentTok{#chart.Correlation(dat1, histogram = TRUE)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Linear Modeling}\label{linear-modeling}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{linmod1 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(WranglerSales }\OperatorTok{~}\StringTok{ }\NormalTok{WranglerQueries }\OperatorTok{+}\StringTok{ }\NormalTok{Unemployment }\OperatorTok{+}\StringTok{ }\NormalTok{CPI.All }\OperatorTok{+}\StringTok{ }\NormalTok{CPI.Energy, }\DataTypeTok{data =}\NormalTok{ training)}
+
+\KeywordTok{summary}\NormalTok{(linmod1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = WranglerSales ~ WranglerQueries + Unemployment + 
+##     CPI.All + CPI.Energy, data = training)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3446.2  -994.0    82.3   905.7  7876.7 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)     -45958.06   59462.93  -0.773    0.442    
+## WranglerQueries    270.23      33.96   7.958 2.87e-11 ***
+## Unemployment       897.97    1124.63   0.798    0.427    
+## CPI.All            174.57     253.40   0.689    0.493    
+## CPI.Energy         -11.06      31.55  -0.351    0.727    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1763 on 67 degrees of freedom
+## Multiple R-squared:  0.7947, Adjusted R-squared:  0.7824 
+## F-statistic: 64.82 on 4 and 67 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{vif}\NormalTok{(linmod1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## WranglerQueries    Unemployment         CPI.All      CPI.Energy 
+##        4.467499       68.567032       69.433385        8.336944
+\end{verbatim}
+
+According to this model, the only coefficient which is significant is
+Wrangler queries. This leads me to believe that there may be colinearity
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{linmod2 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(WranglerSales }\OperatorTok{~}\StringTok{ }\NormalTok{WranglerQueries }\OperatorTok{+}\StringTok{ }\NormalTok{CPI.All }\OperatorTok{+}\StringTok{ }\NormalTok{CPI.Energy, }\DataTypeTok{data =}\NormalTok{ training)}
+
+\KeywordTok{summary}\NormalTok{(linmod2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = WranglerSales ~ WranglerQueries + CPI.All + CPI.Energy, 
+##     data = training)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3528.0 -1011.6     6.7   939.8  7829.1 
+## 
+## Coefficients:
+##                 Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)       476.20   12370.57   0.038    0.969    
+## WranglerQueries   269.14      33.84   7.953 2.66e-11 ***
+## CPI.All           -21.10      64.31  -0.328    0.744    
+## CPI.Energy         12.21      12.05   1.013    0.315    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1758 on 68 degrees of freedom
+## Multiple R-squared:  0.7927, Adjusted R-squared:  0.7836 
+## F-statistic: 86.68 on 3 and 68 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{vif}\NormalTok{(linmod2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## WranglerQueries         CPI.All      CPI.Energy 
+##        4.460372        4.496770        1.223607
+\end{verbatim}
+
+Still not good enough- going to get rid of CPI now
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{linmod3 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(WranglerSales }\OperatorTok{~}\StringTok{ }\NormalTok{WranglerQueries }\OperatorTok{+}\StringTok{ }\NormalTok{CPI.Energy, }\DataTypeTok{data =}\NormalTok{ training)}
+
+\KeywordTok{summary}\NormalTok{(linmod3)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = WranglerSales ~ WranglerQueries + CPI.Energy, data = training)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3562.2  -958.6     9.1   931.6  7818.5 
+## 
+## Coefficients:
+##                 Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)     -3479.86    2742.44  -1.269    0.209    
+## WranglerQueries   259.38      16.00  16.216   <2e-16 ***
+## CPI.Energy         10.56      10.88   0.970    0.335    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1747 on 69 degrees of freedom
+## Multiple R-squared:  0.7924, Adjusted R-squared:  0.7864 
+## F-statistic: 131.7 on 2 and 69 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{vif}\NormalTok{(linmod3)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## WranglerQueries      CPI.Energy 
+##         1.00964         1.00964
+\end{verbatim}
+
+Unemployment does not appear to e significant- checking other variables
+now
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{linmod4 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(WranglerSales }\OperatorTok{~}\StringTok{ }\NormalTok{WranglerQueries }\OperatorTok{+}\StringTok{ }\NormalTok{CPI.All, }\DataTypeTok{data =}\NormalTok{ training)}
+
+\KeywordTok{summary}\NormalTok{(linmod4)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = WranglerSales ~ WranglerQueries + CPI.All, data = training)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3382.8 -1153.8    53.2   825.3  7975.7 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)     -2219.004  12083.283  -0.184    0.855    
+## WranglerQueries   255.088     30.870   8.263 6.59e-12 ***
+## CPI.All             6.142     58.432   0.105    0.917    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1758 on 69 degrees of freedom
+## Multiple R-squared:  0.7896, Adjusted R-squared:  0.7835 
+## F-statistic: 129.5 on 2 and 69 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+It appears that out of these variables only Wrangler Queries is
+significant
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{linmod5 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(WranglerSales }\OperatorTok{~}\StringTok{ }\NormalTok{WranglerQueries, }\DataTypeTok{data =}\NormalTok{ training)}
+
+\KeywordTok{summary}\NormalTok{(linmod5)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = WranglerSales ~ WranglerQueries, data = training)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3363.8 -1171.7    37.2   805.9  7986.4 
+## 
+## Coefficients:
+##                 Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)      -952.18     857.14  -1.111     0.27    
+## WranglerQueries   257.86      15.91  16.205   <2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1746 on 70 degrees of freedom
+## Multiple R-squared:  0.7895, Adjusted R-squared:  0.7865 
+## F-statistic: 262.6 on 1 and 70 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\subsection{Question 3 b and c}\label{question-3-b-and-c}
+
+Checking how incorporatingmonth as a factor changes things
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{linmod6 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(WranglerSales }\OperatorTok{~}\StringTok{ }\NormalTok{WranglerQueries }\OperatorTok{+}\StringTok{ }\NormalTok{monfac, }\DataTypeTok{data =}\NormalTok{ training)}
+
+\KeywordTok{summary}\NormalTok{(linmod6)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = WranglerSales ~ WranglerQueries + monfac, data = training)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -2796.0  -645.2  -206.6   622.6  8394.1 
+## 
+## Coefficients:
+##                 Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)       105.57    1012.37   0.104  0.91730    
+## WranglerQueries   245.55      15.27  16.079  < 2e-16 ***
+## monfacAugust     -320.44     894.71  -0.358  0.72151    
+## monfacDecember    488.42     891.27   0.548  0.58576    
+## monfacFebruary   -911.47     890.09  -1.024  0.31001    
+## monfacJanuary   -2894.73     894.71  -3.235  0.00199 ** 
+## monfacJuly       -670.71     898.96  -0.746  0.45857    
+## monfacJune        -64.07     893.52  -0.072  0.94308    
+## monfacMarch      -141.03     888.17  -0.159  0.87438    
+## monfacMay        1672.39     889.92   1.879  0.06515 .  
+## monfacNovember  -1048.56     889.92  -1.178  0.24342    
+## monfacOctober    -256.15     889.76  -0.288  0.77444    
+## monfacSeptember  -821.42     888.36  -0.925  0.35892    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1538 on 59 degrees of freedom
+## Multiple R-squared:  0.8623, Adjusted R-squared:  0.8343 
+## F-statistic:  30.8 on 12 and 59 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+This has cause the R squared to increase- maybe better?
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# checking linmod 5 (no categorical variables) and lin mod 6(categorical month variables)}
+\NormalTok{test}\OperatorTok{$}\NormalTok{P5 <-}\StringTok{ }\KeywordTok{predict}\NormalTok{(linmod5, test)}
+\NormalTok{test_w_mean <-}\StringTok{ }\KeywordTok{mean}\NormalTok{(test}\OperatorTok{$}\NormalTok{WranglerSales)}
+\NormalTok{test <-}\StringTok{ }\NormalTok{test }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{e5 =} \KeywordTok{abs}\NormalTok{(P5}\OperatorTok{-}\NormalTok{WranglerSales)) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{baselinee =} \KeywordTok{abs}\NormalTok{(WranglerSales }\OperatorTok{-}\StringTok{ }\NormalTok{test_w_mean))}
+
+\NormalTok{SSE5 <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(test}\OperatorTok{$}\NormalTok{e5}\OperatorTok{^}\DecValTok{2}\NormalTok{)}
+\NormalTok{SST <-}\StringTok{ }\KeywordTok{sum}\NormalTok{((test}\OperatorTok{$}\NormalTok{baselinee}\OperatorTok{^}\DecValTok{2}\NormalTok{))}
+\NormalTok{OSR5 =}\StringTok{ }\DecValTok{1}\OperatorTok{-}\NormalTok{(SSE5}\OperatorTok{/}\NormalTok{SST)}
+\NormalTok{OSR5}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] -0.08210412
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{test}\OperatorTok{$}\NormalTok{P6 <-}\StringTok{ }\KeywordTok{predict}\NormalTok{(linmod6, test)}
+\NormalTok{test <-}\StringTok{ }\NormalTok{test }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{e6 =} \KeywordTok{abs}\NormalTok{(P6}\OperatorTok{-}\NormalTok{WranglerSales))}
+
+\NormalTok{SSE6 <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(test}\OperatorTok{$}\NormalTok{e6}\OperatorTok{^}\DecValTok{2}\NormalTok{)}
+\NormalTok{OSR6 <-}\StringTok{ }\DecValTok{1}\OperatorTok{-}\NormalTok{(SSE6}\OperatorTok{/}\NormalTok{SST)}
+\NormalTok{OSR6}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.1779963
+\end{verbatim}
+
+Both of these OSR's are terrible, but the OSR for including month is
+slightly less terrible
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{##checking the math, manually doing}
+\NormalTok{training}\OperatorTok{$}\NormalTok{P5 <-}\StringTok{ }\KeywordTok{predict}\NormalTok{(linmod5, training)}
+\NormalTok{tr_w_mean <-}\StringTok{ }\KeywordTok{mean}\NormalTok{(training}\OperatorTok{$}\NormalTok{WranglerSales)}
+\NormalTok{training <-}\StringTok{ }\NormalTok{training }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{e5 =} \KeywordTok{abs}\NormalTok{(P5}\OperatorTok{-}\NormalTok{WranglerSales)) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{baselinee =} \KeywordTok{abs}\NormalTok{(WranglerSales }\OperatorTok{-}\StringTok{ }\NormalTok{tr_w_mean))}
+
+\NormalTok{trSSE5 <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(training}\OperatorTok{$}\NormalTok{e5}\OperatorTok{^}\DecValTok{2}\NormalTok{)}
+\NormalTok{trSST <-}\StringTok{ }\KeywordTok{sum}\NormalTok{((training}\OperatorTok{$}\NormalTok{baselinee}\OperatorTok{^}\DecValTok{2}\NormalTok{))}
+\NormalTok{trOSR5 =}\StringTok{ }\DecValTok{1}\OperatorTok{-}\NormalTok{(trSSE5}\OperatorTok{/}\NormalTok{trSST)}
+\NormalTok{trOSR5}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.7895414
+\end{verbatim}
+
+This is equal to the R squared so I am not too far off- just a terrible
+model
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{linmod7 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(WranglerSales }\OperatorTok{~}\StringTok{ }\NormalTok{Unemployment, }\DataTypeTok{data =}\NormalTok{ training)}
+
+\KeywordTok{summary}\NormalTok{(linmod7)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = WranglerSales ~ Unemployment, data = training)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -4775.7 -1865.1    59.7  1331.3  7464.8 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   26579.7     1480.3  17.955  < 2e-16 ***
+## Unemployment  -1856.2      191.7  -9.682 1.51e-14 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 2488 on 70 degrees of freedom
+## Multiple R-squared:  0.5725, Adjusted R-squared:  0.5664 
+## F-statistic: 93.73 on 1 and 70 DF,  p-value: 1.507e-14
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# checking the OSR}
+\NormalTok{test}\OperatorTok{$}\NormalTok{P7 <-}\StringTok{ }\KeywordTok{predict}\NormalTok{(linmod7, test)}
+\NormalTok{test <-}\StringTok{ }\NormalTok{test }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{e7 =} \KeywordTok{abs}\NormalTok{(P7}\OperatorTok{-}\NormalTok{WranglerSales))}
+
+\NormalTok{SSE7 <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(test}\OperatorTok{$}\NormalTok{e7}\OperatorTok{^}\DecValTok{2}\NormalTok{)}
+\NormalTok{OSR7 <-}\StringTok{ }\DecValTok{1}\OperatorTok{-}\NormalTok{(SSE7}\OperatorTok{/}\NormalTok{SST)}
+\NormalTok{OSR7}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.05402632
+\end{verbatim}
+
+Multiple r suared on this is not good and the OSR is worse than the
+model with month and wrangler enquiries, so I guess it is not helpful
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#adding seasons}
+
+
+\NormalTok{linmod8 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(WranglerSales }\OperatorTok{~}\StringTok{ }\NormalTok{WranglerQueries }\OperatorTok{+}\StringTok{ }\NormalTok{Season.f, }\DataTypeTok{data =}\NormalTok{ training)}
+
+\KeywordTok{summary}\NormalTok{(linmod8)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = WranglerSales ~ WranglerQueries + Season.f, data = training)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -2653.5 -1128.8  -141.8   945.4  8596.0 
+## 
+## Coefficients:
+##                 Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)      -831.63     915.46  -0.908   0.3669    
+## WranglerQueries   250.11      16.49  15.171   <2e-16 ***
+## Season.fSpring   1206.23     562.32   2.145   0.0356 *  
+## Season.fSummer    313.35     582.10   0.538   0.5921    
+## Season.fWinter   -381.49     563.24  -0.677   0.5005    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1681 on 67 degrees of freedom
+## Multiple R-squared:  0.8132, Adjusted R-squared:  0.8021 
+## F-statistic: 72.94 on 4 and 67 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# checking the OSR}
+\NormalTok{test}\OperatorTok{$}\NormalTok{P8 <-}\StringTok{ }\KeywordTok{predict}\NormalTok{(linmod8, test)}
+\NormalTok{test <-}\StringTok{ }\NormalTok{test }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{e8 =} \KeywordTok{abs}\NormalTok{(P8}\OperatorTok{-}\NormalTok{WranglerSales))}
+
+\NormalTok{SSE8 <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(test}\OperatorTok{$}\NormalTok{e8}\OperatorTok{^}\DecValTok{2}\NormalTok{)}
+\NormalTok{OSR8 <-}\StringTok{ }\DecValTok{1}\OperatorTok{-}\NormalTok{(SSE8}\OperatorTok{/}\NormalTok{SST) }
+\NormalTok{OSR8}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.103266
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{linmod9 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(WranglerSales }\OperatorTok{~}\StringTok{ }\NormalTok{WranglerQueries }\OperatorTok{+}\StringTok{ }\NormalTok{is_jan }\OperatorTok{+}\StringTok{ }\NormalTok{is_spring, }\DataTypeTok{data =}\NormalTok{ training)}
+
+\KeywordTok{summary}\NormalTok{(linmod9)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = WranglerSales ~ WranglerQueries + is_jan + is_spring, 
+##     data = training)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3269.1  -867.3   -97.2   621.6  7952.8 
+## 
+## Coefficients:
+##                 Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)      -474.38     791.06  -0.600 0.550711    
+## WranglerQueries   247.99      14.32  17.320  < 2e-16 ***
+## is_janTRUE      -2424.24     680.05  -3.565 0.000672 ***
+## is_springTRUE     961.28     427.60   2.248 0.027818 *  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1547 on 68 degrees of freedom
+## Multiple R-squared:  0.8395, Adjusted R-squared:  0.8324 
+## F-statistic: 118.5 on 3 and 68 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# checking the OSR}
+\NormalTok{test}\OperatorTok{$}\NormalTok{P9 <-}\StringTok{ }\KeywordTok{predict}\NormalTok{(linmod9, test)}
+\NormalTok{test <-}\StringTok{ }\NormalTok{test }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{e9 =} \KeywordTok{abs}\NormalTok{(P9}\OperatorTok{-}\NormalTok{WranglerSales))}
+
+\NormalTok{SSE9 <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(test}\OperatorTok{$}\NormalTok{e9}\OperatorTok{^}\DecValTok{2}\NormalTok{)}
+\NormalTok{OSR9 <-}\StringTok{ }\DecValTok{1}\OperatorTok{-}\NormalTok{(SSE9}\OperatorTok{/}\NormalTok{SST) }
+
+\NormalTok{OSR9}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.1556594
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#trying same thing but including year}
+\NormalTok{linmod10 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(WranglerSales }\OperatorTok{~}\StringTok{ }\NormalTok{WranglerQueries }\OperatorTok{+}\StringTok{ }\NormalTok{is_spring, }\DataTypeTok{data =}\NormalTok{ training)}
+
+\KeywordTok{summary}\NormalTok{(linmod10)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = WranglerSales ~ WranglerQueries + is_spring, data = training)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3051.6 -1167.5  -120.2   895.3  8284.4 
+## 
+## Coefficients:
+##                 Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)     -1200.95     826.66  -1.453  0.15082    
+## WranglerQueries   256.77      15.26  16.832  < 2e-16 ***
+## is_springTRUE    1223.65     455.56   2.686  0.00905 ** 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1673 on 69 degrees of freedom
+## Multiple R-squared:  0.8095, Adjusted R-squared:  0.8039 
+## F-statistic: 146.6 on 2 and 69 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{test}\OperatorTok{$}\NormalTok{P10 <-}\StringTok{ }\KeywordTok{predict}\NormalTok{(linmod10, test)}
+\NormalTok{test <-}\StringTok{ }\NormalTok{test }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{e10 =} \KeywordTok{abs}\NormalTok{(P10}\OperatorTok{-}\NormalTok{WranglerSales))}
+
+\NormalTok{SSE10 <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(test}\OperatorTok{$}\NormalTok{e10}\OperatorTok{^}\DecValTok{2}\NormalTok{)}
+\NormalTok{OSR10 <-}\StringTok{ }\DecValTok{1}\OperatorTok{-}\NormalTok{(SSE10}\OperatorTok{/}\NormalTok{SST) }
+
+\NormalTok{OSR10}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.02904932
+\end{verbatim}
+
+\subsection{Question 3 part d}\label{question-3-part-d}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#including FJ cruiser (competitor) data}
+\NormalTok{linmod11 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(WranglerSales }\OperatorTok{~}\StringTok{ }\NormalTok{WranglerQueries}\OperatorTok{+}\StringTok{ }\NormalTok{monfac }\OperatorTok{+}\StringTok{ }\NormalTok{fj_Cruiser_USA, }\DataTypeTok{data =}\NormalTok{ training)}
+
+\KeywordTok{summary}\NormalTok{(linmod11)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = WranglerSales ~ WranglerQueries + monfac + fj_Cruiser_USA, 
+##     data = training)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -2969.9  -713.9  -107.2   577.6  8347.3 
+## 
+## Coefficients:
+##                 Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)     -2126.04    2924.01  -0.727  0.47009    
+## WranglerQueries   242.39      15.80  15.340  < 2e-16 ***
+## monfacAugust     -517.29     929.31  -0.557  0.57991    
+## monfacDecember    542.66     896.31   0.605  0.54725    
+## monfacFebruary  -1012.87     901.30  -1.124  0.26573    
+## monfacJanuary   -3038.85     914.59  -3.323  0.00155 ** 
+## monfacJuly       -861.23     931.44  -0.925  0.35899    
+## monfacJune        -99.56     897.15  -0.111  0.91202    
+## monfacMarch      -242.81     899.46  -0.270  0.78816    
+## monfacMay        1712.55     893.84   1.916  0.06031 .  
+## monfacNovember   -957.93     899.40  -1.065  0.29125    
+## monfacOctober    -169.67     898.62  -0.189  0.85090    
+## monfacSeptember  -816.14     890.93  -0.916  0.36343    
+## fj_Cruiser_USA     28.03      34.44   0.814  0.41907    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1542 on 58 degrees of freedom
+## Multiple R-squared:  0.8639, Adjusted R-squared:  0.8334 
+## F-statistic: 28.32 on 13 and 58 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{vif}\NormalTok{(linmod11)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                     GVIF Df GVIF^(1/(2*Df))
+## WranglerQueries 1.263402  1        1.124011
+## monfac          1.705232 11        1.024556
+## fj_Cruiser_USA  1.583979  1        1.258562
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# checking the OSR}
+\NormalTok{test}\OperatorTok{$}\NormalTok{P11 <-}\StringTok{ }\KeywordTok{predict}\NormalTok{(linmod11, test)}
+\NormalTok{test <-}\StringTok{ }\NormalTok{test }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{e11 =} \KeywordTok{abs}\NormalTok{(P11}\OperatorTok{-}\NormalTok{WranglerSales))}
+
+\NormalTok{SSE11 <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(test}\OperatorTok{$}\NormalTok{e11}\OperatorTok{^}\DecValTok{2}\NormalTok{)}
+\NormalTok{OSR11 <-}\StringTok{ }\DecValTok{1}\OperatorTok{-}\NormalTok{(SSE11}\OperatorTok{/}\NormalTok{SST) }
+
+\NormalTok{OSR11}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.2869424
+\end{verbatim}
+
+Note that the \texttt{echo\ =\ FALSE} parameter was added to the code
+chunk to prevent printing of the R code that generated the plot.
+
+
+\end{document}
