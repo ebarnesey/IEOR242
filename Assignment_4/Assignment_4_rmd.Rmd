@@ -32,36 +32,43 @@ library(ngram)
 #install.packages("tm.plugin.webmining")
 #library(tm.plugin.webmining)
 
+#install.packages("boot")
+library(boot)
 
 ```
 
-## Including Plots
+## Question 1a: Cleaning Data
 
-You can also embed plots, for example:
+The purpose of this section is to turn the original data set containing three fields (title, HTML formatted body, and score of stack exchange questions) into a dataframe which describes these features in a format upon which a variety of models may be trained to determine whether or not a question will be good.  I will acheive this primarily through converting the body and title fields into a series of features describing the frequency of occurrence of key words in each. 
 
-```{r pressure}
+```{r}
 Clean <- function(HTML){
   return(gsub("<.*?>", "", HTML))
 }
 
 
 ```
-
+The Clean function will allow me to remove parse out the html components to change the result into text.
 ```{r}
+# read in the Stack Exchange questions
 questions <- read.csv(file = "ggplot2questions2016_17.csv", stringsAsFactors = FALSE)
 
+# removing the HTML components from the body portion
 questions_html <- questions %>% 
   mutate(Body2 = Clean(Body))
 
+# creating fields which count the number of words in the body and head in case these are predictive of good/bad questions
 questions_html$bodyword = unlist(lapply(questions_html$Body2, wordcount))
 questions_html$titleword = unlist(lapply(questions_html$Title, wordcount))
 
+# removing parantheses to deal with common r syntax of function(data) and parse the components out into individual words
 questions_html= questions_html %>% 
   mutate(Body2 = gsub('[[:digit:]]+', '', Body2)) %>% 
   mutate(Body2 = gsub("*\\(", " ", Body2)) %>% 
-  mutate(Body2 = gsub("*\\)", "", Body2))  
+  mutate(Body2 = gsub("*\\)", "", Body2)) %>% 
+  mutate(Body2 = gsub("[[:punct:]]", " ", Body2))
 
-
+# creating a field simplifying the scores into a logical of whether or not the question is good
 questions_html$goodq = as.factor(as.logical(questions_html$Score >= 1))
 
 table(questions_html$goodq)
@@ -69,48 +76,47 @@ table(questions_html$goodq)
 Note that according to this table, the number of good questions and bad questions are approximately equal. 
 
 ```{r}
-# parsing out the body
+# parsing out the body by casting to corpus
 corpus = Corpus(VectorSource(questions_html$Body2))
 
 corpus[[1]]
-strwrap(corpus[[1]])
+strwrap(corpus[[5]])
 
-# Step 2: Change all the text to lower case.
-# tm_map applies an operation to every document in our corpus
-# Here, that operation is 'tolower', i.e., 'to lowercase'
+# Change all the text to lower case.
 corpus = tm_map(corpus, tolower)
 
 # tolower is a function
-
 # Lets check:
-strwrap(corpus[[1]])
+strwrap(corpus[[5]])
 
 
-# Step 3: Remove all punctuation
-corpus = tm_map(corpus, removePunctuation)
+#Remove all punctuation
+#corpus = tm_map(corpus, removePunctuation)
 # Take a look:
-strwrap(corpus[[1]])
+#strwrap(corpus[[5]])
 
-# Step 4: Remove stop words
+# Remove stop words
 # First, take a look at tm's stopwords:
-stopwords("english")[1:10]
-length(stopwords("english"))
+
+stopwords("english")[1:40]
+#length(stopwords("english"))
+
 # Just remove stopwords:
-# corpus = tm_map(corpus, removeWords, stopwords("english"))
+corpus = tm_map(corpus, removeWords, stopwords("english"))
 # Remove stopwords and "apple" - this is a word common to all of our tweets
-corpus = tm_map(corpus, removeWords, c("ggplot2", stopwords("english")))
+#corpus = tm_map(corpus, removeWords, c("ggplot2", stopwords("english")))
 # Take a look:
-strwrap(corpus[[1]])
+strwrap(corpus[[5]])
 
 # Step 5: Stem our document
 # Recall, this means chopping off the ends of words that aren't maybe
 # as necessary as the rest, like 'ing' and 'ed'
 corpus = tm_map(corpus, stemDocument)
 # Take a look:
-strwrap(corpus[[1]])
+strwrap(corpus[[5]])
 
-# Seems we didn't catch all of the apples...
- corpus = tm_map(corpus, removeWords, c("ggplot"))
+# Seems we didn't catch all of the ggplot  
+#corpus = tm_map(corpus, removeWords, c("ggplot"))
 
 # Step 6: Create a word count matrix (rows are tweets, columns are words)
 # We've finished our basic cleaning, so now we want to calculate frequencies
@@ -124,27 +130,28 @@ frequencies
 # We currently have way too many words, which will make it hard to train
 # our models and may even lead to overfitting.
 # Use findFreqTerms to get a feeling for which words appear the most
+# currently commented out because otherwise the document would be enormous, but they were used for examination
 
 # Words that appear at least 50 times:
-findFreqTerms(frequencies, lowfreq=1000)
+#findFreqTerms(frequencies, lowfreq=1000)
 # Words that appear at least 20 times:
-findFreqTerms(frequencies, lowfreq=500)
+#findFreqTerms(frequencies, lowfreq=500)
 
 # Our solution to the possibility of overfitting is to only keep terms
 # that appear in x% or more of the tweets. For example:
-# 1% of the tweets or more (= 12 or more)
+#examinint number of terms in 1% 
 sparse = removeSparseTerms(frequencies, 0.99)
 
-# 0.5% of the tweets or more (= 6 or more)
+# in .5% or more
 sparse = removeSparseTerms(frequencies, 0.995)
 # How many did we keep?
+#sparse
+
+# Let's keep it at the 20% (otherwise it takes FOREVER to run)
+sparse = removeSparseTerms(frequencies, 0.8)
 sparse
 
-# Let's keep it at the 1%
-sparse = removeSparseTerms(frequencies, 0.7)
-sparse
-
-# Step 8: Create data frame from the document-term matrix
+# Create data frame from the document-term matrix
 QsTM = as.data.frame(as.matrix(sparse))
 # We have some variable names that start with a number, 
 # which can cause R some problems. Let's fix this before going
@@ -155,7 +162,7 @@ colnames(QsTM) = make.names(colnames(QsTM))
 QsTM$goodq = questions_html$goodq
 
 
-
+# also need to bring over the fields with the body word and title word fields
 QsTM$bodyword = questions_html$bodyword
 
 QsTM$titleword = questions_html$titleword
@@ -163,10 +170,10 @@ QsTM$titleword = questions_html$titleword
 
 
 # Bonus: make a cool word cloud!
-wordcloud(corpus, max.words = 200, random.order = FALSE, rot.per = .1, 
-          colors = brewer.pal(8, "Dark2"))
+#wordcloud(corpus, max.words = 200, random.order = FALSE, rot.per = .1, 
+#          colors = brewer.pal(8, "Dark2"))
 ```
-Parsing out the header
+In the following section I parse out the header, using similar steps to the body cleaning.
 ```{r}
 corpus = Corpus(VectorSource(questions_html$Title))
 
@@ -196,7 +203,7 @@ length(stopwords("english"))
 # Just remove stopwords:
 # corpus = tm_map(corpus, removeWords, stopwords("english"))
 # Remove stopwords and "apple" - this is a word common to all of our tweets
-corpus = tm_map(corpus, removeWords, c("ggplot2", stopwords("english")))
+corpus = tm_map(corpus, removeWords,  stopwords("english"))
 # Take a look:
 strwrap(corpus[[1]])
 
@@ -207,36 +214,32 @@ corpus = tm_map(corpus, stemDocument)
 # Take a look:
 strwrap(corpus[[1]])
 
-# Seems we didn't catch all of the apples...
- corpus = tm_map(corpus, removeWords, c("ggplot"))
+# might try dropping ggplot2(although this could actually be helpful since really bad questions might be mislabaled and not have ggplot2)
+#corpus = tm_map(corpus, removeWords, c("ggplot", "ggplot2"))
  
- frequencies = DocumentTermMatrix(corpus)
+frequencies = DocumentTermMatrix(corpus)
 # We can get some summary information by looking at this structure
 frequencies
 
 
-# Step 7: Account for sparsity
-# We currently have way too many words, which will make it hard to train
-# our models and may even lead to overfitting.
-# Use findFreqTerms to get a feeling for which words appear the most
 
-# Words that appear at least 50 times:
-findFreqTerms(frequencies, lowfreq=1000)
-# Words that appear at least 20 times:
+# Words that appear at least 7000 times:
+findFreqTerms(frequencies, lowfreq=2000)
+# Words that appear at least 500 times:
 findFreqTerms(frequencies, lowfreq=500)
 
 # Our solution to the possibility of overfitting is to only keep terms
 # that appear in x% or more of the tweets. For example:
 # 1% of the tweets or more (= 12 or more)
-sparse = removeSparseTerms(frequencies, 0.99)
+#sparse = removeSparseTerms(frequencies, 0.99)
 
 # 0.5% of the tweets or more (= 6 or more)
-sparse = removeSparseTerms(frequencies, 0.995)
+#sparse = removeSparseTerms(frequencies, 0.995)
 # How many did we keep?
-sparse
+#sparse
 
-# Let's keep it at the 1%
-sparse = removeSparseTerms(frequencies, 0.7)
+# Let's keep it at the 4%
+sparse = removeSparseTerms(frequencies, 0.96)
 sparse
 
 # Step 8: Create data frame from the document-term matrix
@@ -246,23 +249,32 @@ QsTM_t = as.data.frame(as.matrix(sparse))
 # any further
 colnames(QsTM_t) = make.names(colnames(QsTM_t))
 
+# create unique column names so we can keep track of the title words as opposed to the body words
 colnames(QsTM_t) <- paste("T", colnames(QsTM_t), sep = "_")
 
+```
+Now that we have two matricies describing the body and text (with unique names for the word frequencies), they must be brought together into a single data frame upon which we can train models. 
+```{r}
+
+# giving both the title matrix and the body matrix id fields so that they can be joined
 id <- rownames(QsTM)
 QsTM <- cbind(id=id, QsTM)
 
 id <- rownames(QsTM_t)
+
 QsTM_t <- cbind(id=id, QsTM_t)
 
+#joining and dropping the id field so that it does not create problems
 QsTM <- QsTM %>% 
-  left_join(QsTM_t)
+  left_join(QsTM_t) %>% 
+  dplyr::select(-id)
 
 
 ```
+## Question 1 part b: Splitting and training
 
 
-
-splitting
+First I split the data set into a training and test set, with 70% of the data in the training set and 30% in the test set.  The ratio of good to bad questions in each is maintained.  
 ```{r}
 split = sample.split(QsTM$goodq, SplitRatio = 0.7)
 
@@ -272,7 +284,6 @@ q.test <- filter(QsTM, split == FALSE)
 ```
 
 
-starting with baseline model
 ```{r}
 table(q.train$goodq)
 
@@ -285,17 +296,20 @@ ac_bt = length(q.test$goodq[q.test$goodq == FALSE])/nrow(q.test)
 ac_bt
 ```
 
-Based on the test set tale, slightly more than half of the questions are bad. Therefore, it follows that the baseline assumption is that every question is bad.
+Based on the test set tale, slightly more than half of the questions are bad. Therefore, it follows that the baseline assumption is that every question is bad. The accuracy of a baseline model predicting that all questions are bad is 50.7%.
 
 
-Starting with logistic model
+The first model I will train on this data is a logistic model. 
 ```{r}
 
 mod1 <- glm(goodq ~., data=q.train, family="binomial")
+
 summary(mod1)
 
 q_log_b = predict(mod1, newdata=q.test, type="response")
 summary(q_log_b)
+
+pred_log = as.factor(as.logical(q_log_b >= .5))
 
 t1 = table(q.test$goodq, q_log_b > 0.5)
 t1
@@ -305,35 +319,36 @@ table(q.test$goodq)
 accuracy_isb = (t1[1,1]+t1[2,2])/nrow(q.test)
 accuracy_isb
 
+```
+The accuracy of this model is better than the baseline, but not by much; its accuracy is `r accuracy_isb`. 
+
+The sumary of the model indicates tha many of the features are insignificant; in order to reduce overfitting and improve the model, here we restrict the condidered features to only those significant in the original model. 
+```{r}
 
 q.train_log <- q.train %>% 
-  dplyr::select("code", "get", "seem", "datafram", "fill", "label", "librari", "result", "variabl", "column", "creat", "exampl", "like", "name", "someth", "error", "appreci", "help", "time", "know", "question", "goodq")
+  dplyr::select("color", "get", "ggplot", "set", "frame", "librari", "stat", "scale", "differ", "exampl", "name", "list", "thank", "one", "T_legend", "T_error", "T_group", "goodq")
 
 q.test_log <- q.test %>% 
-  dplyr::select("code", "get", "seem", "datafram", "fill", "label", "librari", "result", "variabl", "column", "creat", "exampl", "like", "name", "someth", "error", "appreci", "help", "time", "know", "question", "goodq")
-
+  dplyr::select("color", "get", "ggplot", "set", "frame", "librari", "stat", "scale", "differ", "exampl", "name", "list", "thank", "one", "T_legend", "T_error", "T_group", "goodq")
 
 mod2 <- glm(goodq ~., data=q.train_log, family="binomial")
 summary(mod2)
 
-q_log_b = predict(mod2, newdata=q.test_log, type="response")
-summary(q_log_b)
+q_log_b2 = predict(mod2, newdata=q.test_log, type="response")
+summary(q_log_b2)
 
-t1 = table(q.test$goodq, q_log_b > 0.5)
+t1 = table(q.test$goodq, q_log_b2 > 0.5)
 t1
 
 table(q.test_log$goodq)
 
-accuracy_isb = (t1[1,1]+t1[2,2])/nrow(q.test)
-accuracy_isb
-
-
-
+accuracy_isb2 = (t1[1,1]+t1[2,2])/nrow(q.test)
+accuracy_isb2
 
 ```
-this is better but not a lot better. Remove some segments
+The accuracy of the trimmed model is actually slightly worse: `r accuracy_isb2`.  From here we proceed to other types of models.
 
-CART modeling
+Next we explore the ability of a CART model to more accurately predict good questions, using k-fold cross validation to determine the ideal cp value.
 ```{r}
 modCART <- rpart(goodq ~.,
             data = q.train, method="class", 
@@ -363,14 +378,13 @@ tcart = table(q.test$goodq, pred_cart)
 accuracy_isb_cart = (tcart[1,1]+tcart[2,2])/nrow(q.test)
 accuracy_isb_cart
 
-
-
 ```
-random forests
+
+Next I try a random forest model, using the values determined in the following cross validation analysis. 
 ```{r}
 
 set.seed(144)
-mod.q.rf <- randomForest(goodq ~ ., data = q.train, mtry = 12, nodesize = 5, ntree = 500)
+mod.q.rf <- randomForest(goodq ~ ., data = q.train, mtry = 2, nodesize = 5, ntree = 900)
 
 pred.q.rf <- predict(mod.q.rf, newdata = q.test)
 
@@ -381,10 +395,13 @@ accuracy_isb_rf = (t_rf[1,1]+t_rf[2,2])/nrow(q.test)
 accuracy_isb_rf
 
 ```
+The accuracy of the random forest model is significantly higher than any of the preceding models; `r accuracy_isb_rf`. 
+
+For processing time reasons, the actual cross calidation section is here commented out. 
 
 ```{r}
 set.seed(144)
-train.rf = train(goodq~., data = q.train, method = "rf", tuneGrid = data.frame(mtry=seq(1, 91, 1)), trControl = trainControl(method = "cv", number = 5), metric = "Accuracy")
+train.rf = train(goodq~., data = q.train, method = "rf", tuneGrid = data.frame(mtry=seq(1, 5, 1)), trControl = trainControl(method = "cv", number = 5), metric = "Accuracy")
 
 best.rf = train.rf$finalModel
 best.rf
@@ -405,5 +422,161 @@ accuracy.rf = (t_rf_all[1,1]+t_rf_all[2,2])/nrow(q.test)
 accuracy.rf 
 ```
 
+Next we try a boosted model.
+```{r}
+set.seed(144)
+mod.boost <- gbm(goodq ~ .,
+                 data = q.train,
+                 distribution = "multinomial",
+                 n.trees = 8000,
+                 interaction.depth = 1)
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+set.seed(144)
+pred.boost <- predict(mod.boost, newdata = q.test, n.trees=8000, type = "response")
+
+pred_fixed = apply(pred.boost, 1, which.max) 
+pred_boost = factor(pred_fixed, levels = c(1,2), labels = c(FALSE, TRUE))
+
+t_rf_all = table(q.test$goodq, pred_boost)
+t_rf_all
+
+accuracy.boost = (t_rf_all[1,1]+t_rf_all[2,2])/nrow(q.test)
+accuracy.boost 
+
+```
+The accuracy of the boosted model is `r accuracy.boost`. 
+The baseline model is least accurate at `r accuracy_b`.  Second least accurate is the logistic model with an accuracy of `r accuracy_isb`. The CART and boosted models have similar accuracies of `r accuracy_isb_cart` and `r accuracy.boost`. The model with the highest accuracy is the random forest model which has an accuracy of `r accuracy.rf`. 
+
+Because the random forest model has the highest accuracy, I will apply bootstrapping to this model in order to identify the confidence interval of the boosted model.
+
+
+Boostraping on random forest model:
+
+```{r}
+mean_squared_error <- function(data, index) {
+  responses <- data$response[index]
+  predictions <- data$prediction[index]
+  MSE <- mean((responses - predictions)^2)
+  return(MSE)
+}
+
+mean_absolute_error <- function(data, index) {
+  responses <- data$response[index]
+  predictions <- data$prediction[index]
+  MAE <- mean(abs(responses - predictions))
+  return(MAE)
+}
+
+OS_R_squared <- function(data, index) {
+  responses <- data$response[index]
+  predictions <- data$prediction[index]
+  baseline <- data$baseline[index]
+  SSE <- sum((responses - predictions)^2)
+  SST <- sum((responses - baseline)^2)
+  r2 <- 1 - SSE/SST
+  return(r2)
+}
+
+all_metrics <- function(data, index) {
+  mse <- mean_squared_error(data, index)
+  mae <- mean_absolute_error(data, index)
+  OSR2 <- OS_R_squared(data, index)
+  return(c(mse, mae, OSR2))
+}
+
+tableAccuracy <- function(test, pred) {
+  t = table(test, pred)
+  a = sum(diag(t))/length(test)
+  return(a)
+}
+
+tableAccuracy_boot <- function(data, index) {
+  
+  test_i = data$response[index]
+  pred_i = data$prediction[index]
+  t = table(test_i, pred_i)
+  a = sum(diag(t))/length(test_i)
+  return(a)
+}
+
+Accuracy_baseline <- function(data, index) {
+  
+  test_i = data$response[index]
+  pred_i = data$prediction[index]
+  t = table(test_i, pred_i)
+  a = t[2]/(t[1]+t[2])
+  return(a)
+}
+
+```
+
+Boostrapping appliad to the random forest model.
+```{r}
+
+RF_test_set = data.frame(response = q.test$goodq, prediction = pred.q.rf, baseline = rep(FALSE, times = nrow(q.test)))
+
+set.seed(892)
+RF_boot <- boot(RF_test_set, tableAccuracy_boot, R = 10000)
+RF_boot
+
+boot.ci(RF_boot, index = 1, type = "basic")
+
+```
+The random forest model has an extremely small bias and relatively low standard error.  The Confidence 95% confidence interval of accuracies is .56-.60.
+
+## Question 1 Part C: Improvements in Modeling for 15 best 
+
+I am selecting the most reliably accurate model as the best model for achieving an improvement in identification of good questions.  Accuracy is a critical metric because it indicates both the models ability to identify good questions and its ability to identify bad questions.  In addition to the simple accuracy score, I will apply bootstrapping to the 4 top candidate models to determine the confidence interval of the accuracies of each, as a model with high accuracy but relatively large error bars may not be the best option in this case. 
+
+```{r}
+boosted_test_set = data.frame(response = q.test$goodq, prediction = pred_boost, baseline = rep(FALSE, times = nrow(q.test)))
+
+set.seed(892)
+boost_boot <- boot(boosted_test_set, tableAccuracy_boot, R = 10000)
+boost_boot
+
+boot.ci(boost_boot, index = 1, type = "basic")
+```
+The standard error of the boosted model is slightly larger than the standard error of the rf model, confirming that the rf model is a better option for accuracy determination than the boosted model. 
+
+```{r}
+cart_test_set = data.frame(response = q.test$goodq, prediction = pred_cart, baseline = rep(FALSE, times = nrow(q.test)))
+
+set.seed(892)
+cart_boot <- boot(cart_test_set, tableAccuracy_boot, R = 10000)
+cart_boot
+
+boot.ci(cart_boot, index = 1, type = "basic")
+
+```
+The CART model has a similar standard error (and therefore similar 95% confidence interval error bars) as the boosted model, but its accuracy range is somewhat higher.  The random forest model is still the best one.
+
+```{r}
+log_test_set = data.frame(response = q.test$goodq, prediction = pred_log, baseline = rep(FALSE, times = nrow(q.test)))
+
+set.seed(892)
+log_boot <- boot(log_test_set, tableAccuracy_boot, R = 10000)
+log_boot
+
+boot.ci(log_boot, index = 1, type = "basic")
+
+```
+The logistic model performs well, but not as well as the random forest model, so the random forest model is the one which is ultimately selected as the best model to identify a good question for the lookup.
+
+In order to determine the degree to which the random forest method of assigning top hits improves upon the "most recent" method, we must first evaluate the accuracy of the "most recent" method in a comparable manner.  The "most recent" method essentially assumes that all questions are good (meaning that the most recently asked question is a good one and should be selected). A bootstrapped assessment of the accuracy of a basic model predicting that all questions are good will give a basis of comparison for evaluating the degree to which the selected random forest model from part b will improve placement of good questions in the top 15. 
+
+```{r}
+
+rec_test_set = data.frame(response = q.test$goodq, prediction = rep(TRUE, times = nrow(q.test)), baseline = rep(FALSE, times = nrow(q.test)))
+
+set.seed(592)
+rec_boot <- boot(rec_test_set, Accuracy_baseline, R = 10000)
+rec_boot
+
+boot.ci(rec_boot, index = 1, type = "basic")
+
+ pp = rep(TRUE, times = nrow(q.test))
+t = table(q.test$goodq, pp)
+t
+```
+The selected model (the random forest model from part B) has a test set accuracy of .58 with 95% confidence interval of .56-.60.  The "all questions are good" model (a standin for the default of choosing the most recent question) has an accuracy of .49 with a confidence interval of .47-.51.  Given that the confidence intervals of the two models do not overlap, we can say with a high degree of certainty (>95%) that the random forest model will do a better job of recommeding useful questions than the default of recommending the most recent question asked.  The improvement in accuracy can be best approximted by the difference of the model accuracies, which is 9%. 
