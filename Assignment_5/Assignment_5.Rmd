@@ -1,0 +1,254 @@
+---
+title: "Assignment_5"
+author: "Emily"
+date: "11/14/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(rpart)
+#install.packages()
+library(rpart.plot)
+library(caret)
+library(randomForest)
+library(gbm)
+library(caTools)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+
+library(tm)
+
+library(ngram)
+#install.packages('ngram')
+#Sys.setenv(JAVA_HOME="C:/Program Files/Java/jdk1-11.0.4/bin")
+#install.packages("tm.plugin.webmining")
+#library(tm.plugin.webmining)
+
+#install.packages("boot")
+library(boot)
+
+#install.packages("softImpute")
+library(softImpute)
+
+#install.packages("ranger")
+library(ranger)
+```
+
+```{r}
+OSR2 <- function(predictions, train, test) {
+  SSE <- sum((test - predictions)^2)
+  SST <- sum((test - mean(train))^2)
+  r2 <- 1 - SSE/SST
+  return(r2)
+}
+
+
+```
+
+
+## Question 1 a
+
+```{r pressure}
+
+M_ratings <- read_csv("MusicRatings.csv")
+
+Songs <- read_csv("Songs.csv")
+
+Users <- read_csv("Users.csv")
+
+# getting rid of duplicates
+Songs <- Songs %>% 
+  distinct()
+# turns out not necessary
+
+nsongs <- nrow(Songs)
+
+head(Users)
+
+nuser <- nrow(Users)
+
+users_fromrating <- M_ratings$userID
+
+t_user <- as.data.frame(table(users_fromrating))
+
+nUser <- nrow(Users)
+
+rat_range <- range(M_ratings$rating)
+
+hist(M_ratings$rating)
+```
+How  many  songs  are  in  this  dataset?   How  many  users?What is the range of values that the ratings take on?
+
+```{r}
+set.seed(345)
+
+# specialty clinic num 5106437177
+
+set.seed(345)
+train.ids <- sample(nrow(M_ratings), 0.92*nrow(M_ratings))
+train <- M_ratings[train.ids,]
+test <- M_ratings[-train.ids,]
+
+# split training into real training and validation set
+valA.ids <- sample(nrow(train), (4/92)*nrow(train))
+valA <- train[valA.ids,]
+train <- train[-valA.ids,]
+
+valB.ids <- sample(nrow(train), (4/88)*nrow(train))
+valB <- train[valB.ids,]
+train <- train[-valB.ids,]
+
+mat.train <- Incomplete(train$userID, train$songID, train$rating)
+
+```
+
+There are `r nSongs ` in this dataset and `r nUser ` in this dataset. The ratings range is `r rat_range` . 
+
+## Question 1 Part B
+
+### Bi
+
+```{r}
+nobs <- nrow(train)
+```
+
+
+There are two parameters included in model (1): alpha-i describes the user bias (whether the user tends to rate songs highly or not), while beta-i describes the song bias (a proxy for song quality, whether or not raters tend to rate the given song highly).  There are `r nobs` observations on which the model may be trained
+
+### Bii
+use biscale, figure out 3 most popular songs
+
+```{r}
+
+#mat.train_full <- Incomplete(M_ratings$userID, M_ratings$songID, M_ratings$rating)
+
+p <- biScale(mat.train, maxit = 1000, row.scale = FALSE, col.scale = FALSE)
+
+song_bi <- attr(p, "p")
+
+user_ai <- attr(p,"biScale:row")$center
+
+song_bi <- attr(p, "biScale:col")$center
+
+Songs$bi <- song_bi
+
+Users$ai <- user_ai
+
+
+sorted_songs <- Songs %>% arrange(desc(bi))
+
+head(sorted_songs)
+
+M_ratings_songsum <- M_ratings %>% 
+  group_by(songID) %>% 
+  summarise(mean_rat = mean(rating))
+
+## just to check this makes sense
+```
+According to the biScale analysis, the three most popular songs are You're The One (Dwight Yoakam, 1990, songID 54), Undo (Bjork, 2001, songID 26), Secrets (OneRepublic, 2009, songID 439).  This relates to model (1) because based on the assumptions made in model (1), all users would be expected to rate these three songs highest (relative to their own rating patterns), with the actual score assigned to these songs being only additionally influenced by how prone any individual user is to give a song a high score.  
+
+### Biii
+```{r}
+sorted_users <- Users %>% arrange(desc(ai))
+
+head(sorted_users)
+
+#to check if this makes sense given actual ratings
+M_ratings_usersum <- M_ratings %>% 
+  group_by(userID) %>% 
+  summarise(mean_rat = mean(rating)) %>% 
+  arrange(desc(mean_rat))
+
+
+```
+According to the biScale analysis, users 1540, 1569, and 838 tend to give songs the most positive reviews
+
+
+### Biv
+```{r}
+#making a column in the test dataset which is the predicted rating based on the alpha and beta values for each user and song in the training set
+
+test_pred1 <- test %>% 
+  mutate(pred1 = 999)
+
+for(i in 1:nrow(test_pred1)){
+  #i = 1
+  usID_temp = test$userID[i]
+  songID_temp = test$songID[i]
+  
+  predai_temp <- Users[which(usID_temp==Users$userID), 2]
+  predai <- predai_temp$ai
+  predbj_temp <- Songs[which(songID_temp==Songs$songID), 6]
+  predbj = predbj_temp$bi
+  
+  test_pred1$pred1[i]= predai + predbj
+  
+}
+
+OSR_1 <- OSR2(test_pred1$pred1, train$rating, test_pred1$rating)
+MAE_1 <- MAE(test_pred1$pred1, test_pred1$rating)
+RMSE_1 <- RMSE(test_pred1$pred1, test_pred1$rating)
+
+```
+The MAE of the fitted model is `r MAE_1`, the RMSE is `r RMSE_1`, and the OSR2 is `r OSR_1`.  
+
+## Problem 1 part C
+
+### Ci
+For this dataset, there will be k+3 parameters included in the model.  These are the k archetypes of song listeners, the profile of the individual listener (the degree to which they adhere to each of the k archetypes), and the alpha and beta parameters described in the prior model which illustrate the 'quality' of the song and the tendancy of the user to rank things highly.
+
+### Ciii
+```{r}
+
+mae.vals = rep(NA, 20)
+
+for (rnk in seq_len(20)) {
+  print(str_c("Trying rank.max = ", rnk))
+  mod <- softImpute(mat.train, rank.max = rnk, lambda = 0, maxit = 1000)
+  preds <- impute(mod, valA$userID, valA$songID) %>% pmin(5) %>% pmax(1)
+  mae.vals[rnk] <- mean(abs(preds - valA$rating))
+}
+
+mae.val.df <- data.frame(rnk = seq_len(20), mae = mae.vals)
+ggplot(mae.val.df, aes(x = rnk, y = mae)) + geom_point(size = 3) + 
+  ylab("Validation MAE") + xlab("Number of Archetypal Users") + 
+  theme_bw() + theme(axis.title=element_text(size=18), axis.text=element_text(size=18))
+
+```
+The MAE is minimized when there are 10 archetypal users, indicating that 10 is an appropriate choice for a k value.
+
+### Ciii
+```{r}
+set.seed(345)
+mod.final <- softImpute(mat.train, rank.max = 10, lambda = 0, maxit = 1000)
+preds <- impute(mod.final, test$userID, test$songID) %>% pmin(5) %>% pmax(1)
+
+OSR_2 <- OSR2(preds, train$rating, test$rating)
+OSR_2
+
+MAE_2 <- MAE(preds, test$rating)
+MAE_2
+
+RMSE_2 <- RMSE(preds, test$rating)
+RMSE_2
+
+
+```
+The OSR2 of this model is `r OSR_2`, the MAE is `r MAE_2`, and the RMSE_2 is `r RMSE_2`.
+
+## Problem 1 part D
+
+### Di
+
+
